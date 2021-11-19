@@ -1,3 +1,5 @@
+from utils.constants import IMAGE_ID, IMAGE_TYPE
+from utils.image_reader import ImageReader
 from utils.feature_models.hog import HistogramOfGradients
 from utils.feature_models.elbp import ExtendedLocalBinaryPattern
 from utils.feature_models.cm import ColorMoments
@@ -8,6 +10,9 @@ from utils.dimensionality_reduction.svd import SingularValueDecomposition
 from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
 
 from utils.constants import *
+
+from utils.image import Image
+import numpy as np
 
 class TaskHelper:
     def __init__(self) -> None:
@@ -35,3 +40,26 @@ class TaskHelper:
         else:
             raise Exception(
                 f"Unknown dimensionality reduction technique - {dimensionality_reduction_technique}")
+
+    def extract_class_labels(self, images, class_type: str):
+        image_reader = ImageReader()
+        class_labels = [''] * len(images)
+
+        if class_type is IMAGE_TYPE:
+            for index, image in enumerate(images):
+                # image_type, subject_id, image_id = image_reader.parse_image_filename(image.filename) # TODO:parallelize
+                class_labels[index] = image.image_type
+
+        elif class_type is SUBJECT_ID:
+            for index, image in enumerate(images):
+                # image_type, subject_id, image_id = image_reader.parse_image_filename(image.filename) # TODO:parallelize
+                class_labels[index] = image.subject_id
+
+        elif class_type is IMAGE_ID:
+            for index, image in enumerate(images):
+                # image_type, subject_id, image_id = image_reader.parse_image_filename(image.filename) # TODO:parallelize
+                class_labels[index] = image.image_id
+        else:
+            raise Exception("Not a supported class type.")
+
+        return np.array(class_labels)
