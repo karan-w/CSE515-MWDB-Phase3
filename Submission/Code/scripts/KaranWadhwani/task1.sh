@@ -1,17 +1,16 @@
 #!/bin/bash
 # Script to run task 1 on Karan's laptop
+source "/Users/karanwadhwani/Documents/ASU/Fall2021/CSE515_MWDB/Project/CSE515-MWDB-Phase3/Submission/Code/venv/bin/activate"
 
-input_images_folder_path="../../all"
 feature_model=ELBP
 dimensionality_reduction_technique=PCA
 reduced_dimensions_count=5
-classification_images_folder_path="../../data"
+training_images_folder_path="../../all"
 classifier=SVM
 
 python3.7 src/tasks/Task1.py \
---input_images_folder_path "${input_images_folder_path}" \
 --feature_model $feature_model \
 --dimensionality_reduction_technique $dimensionality_reduction_technique \
 --reduced_dimensions_count $reduced_dimensions_count \
---classification_images_folder_path "${classification_images_folder_path}" \
+--training_images_folder_path "${training_images_folder_path}" \
 --classifier $classifier

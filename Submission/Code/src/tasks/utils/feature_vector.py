@@ -45,6 +45,21 @@ class FeatureVector:
         types_feature_vector = np.stack(types_feature_vector, axis=0)
         return types_feature_vector
 
+    
+    def create_images_reduced_feature_vector(self, images):
+        """
+        This function takes a list of Image objects and extracts their 
+        reduced dimensions feature vector and stacks them all to produce an n * k 
+        numpy ndarray.
+        NOTE - NO SORTING IS HAPPENING HERE. 
+        """
+        images_reduced_feature_vector = []
+        for image in images:
+            images_reduced_feature_vector.append(image.reduced_feature_vector)
+        
+        images_reduced_feature_vector = np.stack(images_reduced_feature_vector, axis=0)
+        return images_reduced_feature_vector
+
     '''
     This function assumes that the images are sorted by (subject_id, and image_id) 
     and the feature_vector array follows the same sorted order. It's the responsibility 
