@@ -35,20 +35,14 @@ class ImageReader:
         logger.debug(image.__str__())
         return image
 
-    def get_image(self, image_metadata):
+    
+    def get_image_util(self, image_metadata):
         folder_path = image_metadata['folder_path']
         image_type = image_metadata['image_type']
         subject_id = image_metadata['subject_id']
         image_id = image_metadata['image_id']
-        image_filename = f'image-{image_type}-{subject_id}-{image_id}.png'
-        image_filepath = os.path.join(folder_path, image_filename)
-        logger.info(f"Reading image at filepath {image_filepath}")
-        image_matrix = cv2.imread(image_filepath, cv2.IMREAD_GRAYSCALE)
-        if image_matrix is None:
-            raise Exception(f"Could not read image with the filepath {image_filepath}")
-        image = Image(image_filename, image_matrix, subject_id, image_id, image_type, image_filepath)
-        logger.debug(image.__str__())
-        return image
+        return self.get_image(folder_path, image_type, subject_id, image_id)
+
     # def get_subject_images(self, folder_path, image_type, subject_id, number_of_images):
     #     logger.info(f"Reading images for subject {subject_id}")
     #     subject_images = []
@@ -127,7 +121,7 @@ class ImageReader:
                     'subject_id': subject_id,
                     'image_id': image_id
                 }
-                futures.append(executor.submit(self.get_image, image_metadata))
+                futures.append(executor.submit(self.get_image_util, image_metadata))
 
 
             for index, future in enumerate(futures):
