@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from tasks.utils.feature_vector import FeatureVector
+from utils.feature_vector import FeatureVector
 
 from utils.constants import IMAGE_TYPE
 
@@ -78,8 +78,8 @@ class Task1:
         # Step 1 - Train SVM classifier on the training images n * k 
 
 
-        linear_kernel = Kernel('linear')
-        multiclass_svm = MultiClassSVM(linear_kernel)
+        init_kernel = Kernel('rbf')
+        multiclass_svm = MultiClassSVM(init_kernel)
         multiclass_svm.fit(training_images_reduced_feature_vectors, class_labels)
 
 

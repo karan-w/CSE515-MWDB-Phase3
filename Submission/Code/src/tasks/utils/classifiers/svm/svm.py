@@ -1,3 +1,4 @@
+from math import gamma
 from numpy.core.fromnumeric import transpose
 from numpy.lib.arraysetops import unique
 from .kernel import Kernel
@@ -9,6 +10,7 @@ class SupportVectorMachine:
     def __init__(self, kernel: Kernel, regularization_parameter: float) -> None:
         self.kernel = kernel
         self.regularization_parameter = regularization_parameter
+        self.gamma = None
 
         # self.kernel = None
         # self.kernel_function = None
@@ -52,7 +54,6 @@ class SupportVectorMachine:
         # Combute b
         b = np.zeros(1)
         b = cvxopt.matrix(b)
-
         
         try:
             solution = cvxopt.solvers.qp(P, q, G, h, A, b)
@@ -65,7 +66,7 @@ class SupportVectorMachine:
 
         lambdas = np.ravel(solution['x']) # training_samples_count * 1
 
-        valid_support_vector = lambdas > 1e-8
+        valid_support_vector = lambdas > 1e-12
         self.training_samples_support_vectors = training_samples[valid_support_vector]
         self.class_labels_support_vectors = class_labels[valid_support_vector]
 
@@ -82,9 +83,12 @@ class SupportVectorMachine:
         if len(self.b) == 1:
             self.b = self.b[0]
 
-        self.w = np.zeros(features_count)
-        for i in range(len(self.lambdas)):
-            self.w += self.lambdas[i] * self.training_samples_support_vectors[i] * self.class_labels_support_vectors[i]
+        if self.kernel.type == 'linear':
+            self.w = np.zeros(features_count)
+            for i in range(len(self.lambdas)):
+                self.w += self.lambdas[i] * self.training_samples_support_vectors[i] * self.class_labels_support_vectors[i]
+        else:
+            self.w = None
         
         print('{0:d} support vectors found out of {1:d} data points'.format(len(self.lambdas), training_samples_count))
         for i in range(len(self.lambdas)):
@@ -97,8 +101,12 @@ class SupportVectorMachine:
     def fit(self, training_samples: np.ndarray, class_labels: np.ndarray) -> None:
         self.training_samples_count, self.features_count = training_samples.shape
 
+        # if gamma is None
+        if not self.gamma:
+            self.gamma = 1/(self.features_count * training_samples.var())
+        
         # Construct the kernel matrix - n * n
-        kernel_matrix = self.kernel.construct_kernel_matrix(training_samples)
+        kernel_matrix = self.kernel.construct_kernel_matrix(training_samples, self.gamma)
 
         # Encode the two class labels into +1 and -1 
         unique_class_labels = np.unique(class_labels)
@@ -115,10 +123,25 @@ class SupportVectorMachine:
     def predict(self, test_sample: np.ndarray) -> str:
         """
         test_sample - np ndarray of (1, k)
+
+        having trouble computing predicted_class_label for non-linear kernel
         """
         # Project test sample onto existing model
-        predicted_class = np.dot(test_sample, self.w) + self.b
-        if predicted_class < 0:
+        if self.w is not None:
+            predicted_class_label = np.dot(test_sample, self.w) + self.b
+        else:
+            # f(x) = sum_i{sum_sv{lambda_sv y_sv K(x_i, x_sv)}} 
+            predicted_class_label = np.zeros(len(test_sample))
+            for k in range(len(test_sample)):
+                for lda, sv_X, sv_y in zip(self.lambdas, self.training_samples_support_vectors, self.class_labels_support_vectors):
+                    # # Extract the two dimensions from sv_X if 'i' and 'j' are specified
+                    # if i or j:
+                    #     sv_X = np.array([self.training_samples_support_vectors[i], sv_X[j]])
+
+                    predicted_class_label[k] += lda * sv_y * self.kernel.construct_kernel_matrix(test_sample[k], sv_X)
+                predicted_class_label = predicted_class_label + self.b
+
+        if predicted_class_label < 0:
             return self.unique_class_labels[0]
         else:
             return self.unique_class_labels[1]

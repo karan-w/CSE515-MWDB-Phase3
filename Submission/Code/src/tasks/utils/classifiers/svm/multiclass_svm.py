@@ -53,7 +53,7 @@ class MultiClassSVM:
             filtered_class_labels = np.stack(filtered_class_labels)
 
             SVM.fit(filtered_images_reduced_feature_vector, filtered_class_labels)
-            print(SVM.predict(filtered_images_reduced_feature_vector[0]))
+            print(SVM.predict(filtered_images_reduced_feature_vector[2]))
             self.svm_hash_map[class_pair] = SVM
 
         # While there's no SVM for every pair of class labels
