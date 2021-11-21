@@ -1,12 +1,15 @@
+import sys
+sys.path.append(".")
+
 from utils.feature_models.hog import HistogramOfGradients
 from utils.feature_models.elbp import ExtendedLocalBinaryPattern
 from utils.feature_models.cm import ColorMoments
+
 
 from utils.dimensionality_reduction.kmeans import KMeans
 from utils.dimensionality_reduction.lda import LatentDirichletAllocation
 from utils.dimensionality_reduction.svd import SingularValueDecomposition
 from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
-
 from utils.constants import *
 
 class TaskHelper:

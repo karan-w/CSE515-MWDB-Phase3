@@ -63,4 +63,3 @@ class PrincipalComponentAnalysis:
     def compute_reprojection(self, query_image, k_principal_components_eigen_vectors):
         reduced_dataset_feature_vector = np.dot(query_image, k_principal_components_eigen_vectors) # (1, m) * (m, k)
         return reduced_dataset_feature_vector
-

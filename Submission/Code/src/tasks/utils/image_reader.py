@@ -166,3 +166,5 @@ class ImageReader:
         image = Image(image_filepath, image_matrix, None, None, None, image_filepath)
         logger.debug(image.__str__())
         return image
+    
+
