@@ -1,3 +1,4 @@
+import sys
 import argparse
 import os
 from utils.image_reader import ImageReader
@@ -14,6 +15,8 @@ from utils.dimensionality_reduction.svd import SingularValueDecomposition
 from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
 
 class Task5:
+
+    dst=[]
     def __init__(self):
         # parser = self.setup_args_parser()
         # self.args = parser.parse_args()
@@ -61,7 +64,42 @@ class Task5:
             'Approximations': va_file,
         }
         return output
-        
+
+    def initialize_candidates_va_ssa(self,k):
+        self.dst=[]
+        for i in range(k):
+            self.dst[i]=sys.maxsize
+        return sys.maxsize
+
+
+    def candidate_va_ssa(self,d,i,n):
+
+        ans = [0]*len(self.dst)
+        if d<self.dst[n]:
+            self.dst[n] = d
+            df = pd.DataFrame(ans,self.dst)
+            df = df.sort_values(self.dst,ascending=False)
+        return self.dst[n]
+
+    def get_bounds(self,ai,vq):
+        # TODO implement upper and lower bound calc.
+        return 1,2
+
+    def lp_metric(self,vi,vq,p):
+
+        summation=0
+        for i in range(len(vi)):
+            summation+=pow(abs(vi[i] - vq[i]),p)
+        return pow(summation,1/p)
+    
+    def va_ssa(self,k,vectors,vq,a):
+        d = self.initialize_candidates_va_ssa(k)
+        search_results=[]
+        for i in range(len(vectors)):
+            l,_ = self.get_bounds(a[i],vq)
+            if l<d:
+                d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i,k)
+                search_results.append(d)
 
 def main():
     task = Task5()
@@ -72,6 +110,7 @@ def main():
     k=np.shape(vectors)[1]
     bits_per_image=k*b
     va,partition_points=task.VA_File(bits_per_image,vectors)
+
     va_strings = [{images[x].filename:''.join(va.loc[x])} for x in range(len(va))]
     output = task.Generate_Output(len(images)*bits_per_image/8,va_strings)
     OUTPUT_FILE_NAME = 'output.json'
@@ -93,6 +132,8 @@ def main():
                 r.append(bi[x])
     r = ''.join(r)
     print(r)
+
+    task.va_ssa(k, vectors, recomp,va)
 
 if __name__ == "__main__":
     main()
