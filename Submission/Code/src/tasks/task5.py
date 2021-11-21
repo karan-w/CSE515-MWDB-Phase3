@@ -8,6 +8,10 @@ from utils.feature_vector import FeatureVector
 import pandas as pd  
 from utils.constants import *
 from utils.output import Output
+from utils.dimensionality_reduction.kmeans import KMeans
+from utils.dimensionality_reduction.lda import LatentDirichletAllocation
+from utils.dimensionality_reduction.svd import SingularValueDecomposition
+from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
 
 class Task5:
     def __init__(self):
@@ -63,8 +67,10 @@ def main():
     task = Task5()
     b=3
     images,vectors = task.feature_vector()
+    comp = vectors['k_principal_components_eigen_vectors']
     vectors=vectors['reduced_dataset_feature_vector']
-    bits_per_image=np.shape(vectors)[1]*b
+    k=np.shape(vectors)[1]
+    bits_per_image=k*b
     va,partition_points=task.VA_File(bits_per_image,vectors)
     va_strings = [{images[x].filename:''.join(va.loc[x])} for x in range(len(va))]
     output = task.Generate_Output(len(images)*bits_per_image/8,va_strings)
@@ -72,7 +78,21 @@ def main():
     timestamp_folder_path = Output().create_timestamp_folder('D:\MWDB\CSE515-MWDB-Phase3\Submission\Outputs\Task5')  # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
     output_json_path = os.path.join(timestamp_folder_path, OUTPUT_FILE_NAME)
     Output().save_dict_as_json_file(output, output_json_path)
-    
+    bi = [bin(y)[2:].rjust(b, '0') for y in range(2**b)]
+    #Get Query Image
+    image = ImageReader().get_query_image('D:\MWDB\\test.png')
+    # print(image)
+    recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
+    # print(recomp)
+    r=[]
+    lower_bounds = []
+    upper_bounds = []
+    for i in range(k):
+        for x in range(len(partition_points[i])-1):
+            if (partition_points[i][x]<=recomp[i]) and (recomp[i]<partition_points[i][x+1]):
+                r.append(bi[x])
+    r = ''.join(r)
+    print(r)
 
 if __name__ == "__main__":
     main()
