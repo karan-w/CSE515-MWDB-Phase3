@@ -65,20 +65,30 @@ class SupportVectorMachine:
         # that we are solving for.
 
         lambdas = np.ravel(solution['x']) # training_samples_count * 1
+        
+        threshold = 1e-6
+        valid_support_vector = lambdas > threshold
 
-        valid_support_vector = lambdas > 1e-12
-        self.training_samples_support_vectors = training_samples[valid_support_vector]
-        self.class_labels_support_vectors = class_labels[valid_support_vector]
+        while(True):
+            self.lambdas = lambdas[valid_support_vector]
 
-        self.lambdas = lambdas[valid_support_vector]
+            if(len(self.lambdas) == 0):
+                threshold *= 1e-1
+                valid_support_vector = lambdas > threshold
+                continue
+            else:
+                self.training_samples_support_vectors = training_samples[valid_support_vector]
+                self.class_labels_support_vectors = class_labels[valid_support_vector]
 
-        support_vectors_index = np.arange(len(lambdas))[valid_support_vector]
+                support_vectors_index = np.arange(len(lambdas))[valid_support_vector]
 
-        self.b = 0
-        for i in range(len(self.lambdas)):
-            self.b += self.class_labels_support_vectors[i]
-            self.b -= np.sum(self.lambdas * self.class_labels_support_vectors * kernel_matrix[support_vectors_index[i], valid_support_vector])
-        self.b /= len(self.lambdas)
+                self.b = 0
+                for i in range(len(self.lambdas)):
+                    self.b += self.class_labels_support_vectors[i]
+                    self.b -= np.sum(self.lambdas * self.class_labels_support_vectors * kernel_matrix[support_vectors_index[i], valid_support_vector])
+
+                self.b /= len(self.lambdas)
+                break
 
         if len(self.b) == 1:
             self.b = self.b[0]
@@ -143,7 +153,6 @@ class SupportVectorMachine:
 
         if np.sign(predicted_class_label) == -1:
             return self.unique_class_labels[0]
-
         else:
             return self.unique_class_labels[1]
 
