@@ -11,6 +11,7 @@ class SupportVectorMachine:
         self.kernel = kernel
         self.regularization_parameter = regularization_parameter
         self.gamma = None
+        self.C = 0.1
 
         # self.kernel = None
         # self.kernel_function = None
@@ -24,10 +25,18 @@ class SupportVectorMachine:
     # Assumption - class labels are a vector of two possible values +1 or -1 
     def optimize_svm_equation(self, kernel_matrix, training_samples, class_labels):
         training_samples_count = training_samples.shape[0]
+        class_labels_count = class_labels.shape[0]
         features_count = training_samples.shape[1]
 
+        print(training_samples_count)
+        print(class_labels_count)
+        print(features_count)
         # Compute X'
-        X_prime = np.multiply(training_samples, class_labels)
+        X_prime = [[0 for a in range(features_count)] for c in range(training_samples_count)]
+        for i in range(features_count):
+            for j in range(class_labels_count):
+                X_prime[i][j] = training_samples[i][j]*class_labels[i]
+        # X_prime = np.multiply(training_samples, class_labels)
         X_prime_transpose = X_prime.transpose()
 
         # Compute H = X' mul X'T
@@ -35,17 +44,21 @@ class SupportVectorMachine:
         P = cvxopt.matrix(H)
 
         # Compute q - n * 1
-        q = np.full((training_samples_count, 1), -1).astype(np.float64)
+        q = np.full((training_samples_count,), -1).astype(np.float64)
         q = cvxopt.matrix(q)
 
         # Compute G
-        G = np.zeros((training_samples_count, training_samples_count))
-        np.fill_diagonal(G, -1)
-        G = cvxopt.matrix(G)
+        if self.C:
+            G = np.vstack((-np.eye(training_samples_count), np.eye(training_samples_count)))
+            G = cvxopt.matrix(G)
+            h = np.hstack((np.zeros(training_samples_count), np.ones(training_samples_count) * self.C))
+            h = cvxopt.matrix(h)
 
-        # Compute h
-        h = np.zeros((training_samples_count, 1))
-        h = cvxopt.matrix(h)
+        else:
+            G = -np.eye(training_samples_count)
+            G = cvxopt.matrix(G)
+            h = np.zeros(training_samples_count)
+            h = cvxopt.matrix(h)
 
         # Compute A
         A = class_labels.transpose()
