@@ -131,18 +131,24 @@ class SupportVectorMachine:
             predicted_class_label = np.dot(test_sample, self.w) + self.b
         else:
             # f(x) = sum_i{sum_sv{lambda_sv y_sv K(x_i, x_sv)}} 
-            predicted_class_label = np.zeros(len(test_sample))
+            predicted_class_label = 0
             for k in range(len(test_sample)):
                 for lda, sv_X, sv_y in zip(self.lambdas, self.training_samples_support_vectors, self.class_labels_support_vectors):
                     # # Extract the two dimensions from sv_X if 'i' and 'j' are specified
                     # if i or j:
                     #     sv_X = np.array([self.training_samples_support_vectors[i], sv_X[j]])
 
-                    predicted_class_label[k] += lda * sv_y * self.kernel.construct_kernel_matrix(test_sample[k], sv_X)
+                    predicted_class_label += lda * sv_y * self.kernel.kernel_function(test_sample[k], sv_X)
                 predicted_class_label = predicted_class_label + self.b
 
-        if predicted_class_label < 0:
+        if np.sign(predicted_class_label) == -1:
             return self.unique_class_labels[0]
+
         else:
             return self.unique_class_labels[1]
+
+        # if predicted_class_label.all() < 0:
+        #     return self.unique_class_labels[0]
+        # else:
+        #     return self.unique_class_labels[1]
         # Convert label from +1 or -1 to real class label
