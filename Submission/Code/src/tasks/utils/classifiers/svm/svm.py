@@ -28,14 +28,16 @@ class SupportVectorMachine:
         class_labels_count = class_labels.shape[0]
         features_count = training_samples.shape[1]
 
-        print(training_samples_count)
-        print(class_labels_count)
-        print(features_count)
         # Compute X'
-        X_prime = [[0 for a in range(features_count)] for c in range(training_samples_count)]
-        for i in range(features_count):
-            for j in range(class_labels_count):
-                X_prime[i][j] = training_samples[i][j]*class_labels[i]
+
+        # X_prime = [[0 for a in range(features_count)] for c in range(training_samples_count)]
+
+        X_prime = np.zeros((training_samples_count, features_count))
+
+        for i in range(training_samples_count):
+            for j in range(features_count):
+                X_prime[i][j] = training_samples[i][j] * class_labels[i]
+
         # X_prime = np.multiply(training_samples, class_labels)
         X_prime_transpose = X_prime.transpose()
 
