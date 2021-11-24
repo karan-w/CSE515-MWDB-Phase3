@@ -25,12 +25,9 @@ class SupportVectorMachine:
     # Assumption - class labels are a vector of two possible values +1 or -1 
     def optimize_svm_equation(self, kernel_matrix, training_samples, class_labels):
         training_samples_count = training_samples.shape[0]
-        class_labels_count = class_labels.shape[0]
         features_count = training_samples.shape[1]
 
         # Compute X'
-
-        # X_prime = [[0 for a in range(features_count)] for c in range(training_samples_count)]
 
         X_prime = np.zeros((training_samples_count, features_count))
 
@@ -117,7 +114,7 @@ class SupportVectorMachine:
         
         print('{0:d} support vectors found out of {1:d} data points'.format(len(self.lambdas), training_samples_count))
         for i in range(len(self.lambdas)):
-            print('{0:d}) X: {1}\ty: {2}\tlambda: {3:.2f}'
+            print('{0:d}) X: {1}\ty: {2}\tlambda: {3:f}'
                     .format(i + 1, self.training_samples_support_vectors[i], self.class_labels_support_vectors[i], self.lambdas[i]))
         print('Bias of the hyper-plane: {0:.3f}'.format(self.b))
         print('Weights of the hyper-plane:', self.w)
@@ -128,7 +125,7 @@ class SupportVectorMachine:
 
         # if gamma is None
         if not self.gamma:
-            self.gamma = 1/(self.features_count * training_samples.var())
+            self.gamma = 0.01
         
         # Construct the kernel matrix - n * n
         kernel_matrix = self.kernel.construct_kernel_matrix(training_samples, self.gamma)

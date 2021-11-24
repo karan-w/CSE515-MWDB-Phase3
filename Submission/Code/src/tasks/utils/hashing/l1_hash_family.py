@@ -10,8 +10,6 @@ class L1HashFamily:
         self.hash_functions = []
         for vector in vectors.transpose(): # to get the column vector as row vector
             self.hash_functions.append(L1HashFunction(vector))
-        
-
 
 class L1HashFunction:
     def __init__(self, vector):

@@ -103,8 +103,8 @@ class MultiClassSVM:
         votes_hash_maps = []
 
         for i in range(testing_samples_count):
-            testing_sample = testing_samples[i]
-            votes_hash_map = dict.fromkeys(self.unique_class_labels.tolist(), 0) 
+            testing_sample = testing_samples[i] 
+            votes_hash_map = dict.fromkeys(self.unique_class_labels.tolist(), 0)
             for class_pair, svm in self.svm_hash_map.items(): # key = class_pair (tuple), value = svm (SupportVectorMachine)
                 predicted_class = svm.predict(testing_sample)
                 votes_hash_map[predicted_class] += 1

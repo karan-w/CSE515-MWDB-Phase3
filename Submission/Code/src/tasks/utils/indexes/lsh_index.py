@@ -14,11 +14,13 @@ class LSHIndex:
     def populate_index(self, images_feature_vector, images_filename):
         for image_feature_vector in images_feature_vector:
             for i in range(self.L):
-                bucket_index = self.hash_functions[i].hash(image_feature_vector) % self.k 
-                if self.hash_tables[i].has_key(bucket_index):
+                bucket_index = self.hash_functions[i].hash(image_feature_vector.feature_vector) % self.k 
+                if bucket_index not in self.hash_tables[i]:
                     self.hash_tables[i][bucket_index] = [images_filename[i]]
                 else: 
                     self.hash_tables[i][bucket_index].append(images_filename[i])
+
+        return self.hash_tables
 
 
 

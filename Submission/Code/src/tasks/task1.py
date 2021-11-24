@@ -1,5 +1,6 @@
 import argparse
 import logging
+import numpy as np
 
 from utils.feature_vector import FeatureVector
 
@@ -12,6 +13,8 @@ from utils.image_reader import ImageReader
 from utils.constants import *
 
 from task_helper import TaskHelper
+
+from sklearn.metrics import confusion_matrix
 
 """
 This class implements task 1 functionality.
@@ -108,10 +111,10 @@ class Task1:
             if(true_class_labels[i] == predicted_class_labels[i]):
                 correct_predictions += 1
             else:
-                print("true = ", true_class_labels[i])
-                print("predicted = ", predicted_class_labels[i])
-                for class_label, votes in votes_hash_maps[i].items():
-                    print(class_label, votes)
+                # print("true = ", true_class_labels[i])
+                # print("predicted = ", predicted_class_labels[i])
+                # for class_label, votes in votes_hash_maps[i].items():
+                #     print(class_label, votes)
                 wrong_predictions += 1
 
         print("correct predictions = ", correct_predictions)
@@ -130,15 +133,21 @@ class Task1:
 
         # Part D - Evaluate the classifications done by each classifier on the test images 
         # Step 1 - Create confusion matrix for SVM classifier
-        # confusion_matrix = ConfusionMatrix(true_labels, predicted_labels)
-        # confusion_matrix.true_positive
-        # confusion_matrix.true_negative
-        # confusion_matrix.false_positive
-        # confusion_matrix.false_negative
-        # confusion_matrix.miss_rate
+        cf_matrix = confusion_matrix(true_class_labels, predicted_class_labels)
+        false_positives = cf_matrix[0][1]
+        false_negatives = cf_matrix[1][0]
+        true_negatives = cf_matrix[1][1]
+        true_positives = cf_matrix[0][0]
+
+        print(false_positives, false_negatives, true_negatives, true_positives)
 
         # Step 2 - Compute false positives and miss rate for SVM classifier
+        false_positive_rate = false_negatives / (false_negatives + true_positives)
+        miss_rate = false_positives / (false_positives + true_negatives)
 
+        print('False positive rate: ', false_positive_rate)
+        print('Miss rate: ', miss_rate)
+        
         # Step 3 - Create confusion matrix for decision tree classifier
 
         # Step 4 - Compute false positives and miss rate for decision tree classifier
@@ -148,8 +157,6 @@ class Task1:
         # Step 6 - Compute false positives and miss rate for personalized page rank classifier
 
         # Part E - Store all results in the output file for task 1
-
-
 
 logger = logging.getLogger(Task1.__name__)
 logging.basicConfig(filename="logs/logs.log", filemode="w", level=logging.DEBUG,

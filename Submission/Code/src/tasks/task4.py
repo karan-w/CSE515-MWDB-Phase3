@@ -37,12 +37,12 @@ class Task4:
     
     def execute(self):
         image_reader = ImageReader()
-        images = image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
+        images_filename = image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
 
         task_helper = TaskHelper()
-        images = task_helper.compute_feature_vectors(
+        images_feature_vector = task_helper.compute_feature_vectors(
             self.args.feature_model, 
-            images)
+            images_filename)
 
         # Read transformation_space_matrix from the file
         transformation_matrix = self.read_transformation_matrix(self.args.transformation_matrix_file_path)
@@ -55,7 +55,9 @@ class Task4:
             "l1"
             )
 
-        lsh_index.populate_index(image)
+        hash_tables = lsh_index.populate_index(images_feature_vector, images_filename)
+        with open('/Users/harshilgandhi/Documents/MWDB_Project/mwdb-phase3/CSE515-MWDB-Phase3/Submission/Code/output.json') as file1:
+            file1.write(json.dumps(hash_tables))
 #         1. Build the locality sensitive hashing index 
         #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
         #     1. a. Set up the hash functions from the transformation space (g1, ..., gL)
