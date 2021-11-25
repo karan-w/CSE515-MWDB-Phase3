@@ -13,7 +13,7 @@ class LSHIndex:
         self.radius = radius
         self.distance_function_type = distance_function_type
         if hash_family_type == "l1":
-            hash_family = L1HashFamily(self.radius, vectors)
+            hash_family = L1HashFamily(10 * self.radius, vectors)
             self.hash_functions = hash_family.hash_functions # List of L1HashFunction
         
         self.hash_tables = []

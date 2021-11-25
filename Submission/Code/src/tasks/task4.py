@@ -16,6 +16,7 @@ from utils.output import Output
 
 from task_helper import TaskHelper
 
+import csv
 
 class Task4:
     def __init__(self):
@@ -82,10 +83,10 @@ class Task4:
 
     def save_output(self, output):
         # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
-        timestamp_folder_path = Output().create_timestamp_folder(self.args.output_folder_path)
+        # timestamp_folder_path = Output().create_timestamp_folder(self.args.output_folder_path)
         # /Outputs/Task1/2021-10-21-23-25-23 -> /Outputs/Task1/2021-10-21-23-25-23/output.json
         output_json_path = os.path.join(
-            timestamp_folder_path, 
+            self.args.output_folder_path, 
             self.args.output_filename)
         Output().save_dict_as_json_file(output, output_json_path)
 
@@ -103,8 +104,66 @@ class Task4:
         self.save_output(output)
 
 
+    def evaluate(self, similar_images):
+        true_image_type = "noise01"
+        true_subject_id = 18
+        true_image_id = 2
+
+        relevant = 0
+        non_relevant = 0
+
+        relevant_images = []
+        non_relevant_images = []
+
+        for similar_image in similar_images:
+            image_type, subject_id, image_id = self.image_reader.parse_image_filename(similar_image.filename)
+            if(image_type == true_image_type or str(subject_id) == str(true_subject_id) or str(image_id) == str(true_image_id)):
+                relevant += 1
+                relevant_images.append(similar_image)
+            else:
+                non_relevant += 1
+                non_relevant_images.append(similar_image)
+
+        similarity_score = relevant/len(similar_images)
+
+        with open('../Outputs/Task4/experiment.csv', mode='a') as experiment_csv_file:
+            experiment_writer = csv.writer(experiment_csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            # Query Image	Feature Model	Dimensionality Reduction Technique	Reduced Dimensions Count	Similar Images Count (t)	Relevant Image Filenames	Non Relevant Image Filenames	Similarity Relevance Score
+            
+            row = []
+            row.append(self.args.query_image_path.split(os.path.sep)[-1])
+            row.append(self.args.feature_model)
+            row.append(self.args.transformation_matrix_file_path.split("_")[-2])
+            row.append(self.args.k)
+            row.append(self.args.t)
+            row.append([relevant_image.filename for relevant_image in relevant_images])
+            row.append([non_relevant_image.filename for non_relevant_image in non_relevant_images])
+            row.append(similarity_score * 100)
+
+            experiment_writer.writerow(row)
+
     def run_task(self):
-         # Read transformation_space_matrix from the file
+                # 1. Build the locality sensitive hashing index 
+        #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
+        #     1. a. Set up the hash functions from the transformation space (g1, ..., gL)
+        #     1. b. Initialize empty L hash tables  (HT1, ..., HTL)
+
+        # 2. Populate the index from the images read from the folder
+        #     2. a. Obtain feature vectors for all the input images based on the feature model provided as input
+        #     2. b. Insert every image into the LSHI
+        #         For i = 1 ... L
+        #             Compute gi(image) and store the image filename in bucket gi(image) in the ith hash table
+
+        # 3. Find t similar images for query image q
+        #         retrieved_images = []
+        #     3. a. For i = 1 ... L
+        #             Compute gi(query_image) and retrieve all the images located in the bucket gi(query_image) in the ith hash table (append to retrieved_images)
+
+        #     3. b. Compute distances between query image and retrieved_images
+
+        #     3. c. Pick the t closest images from the retrieved images
+
+        # Read transformation_space_matrix from the file
         transformation_matrix = self.read_transformation_matrix(self.args.transformation_matrix_file_path)
         transformation_matrix = np.array(transformation_matrix)
 
@@ -132,6 +191,8 @@ class Task4:
         for image in similar_images:
             print(image.filename)
 
+        self.evaluate(similar_images)
+
     def execute(self):
         self.image_reader = ImageReader()
         self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
@@ -147,25 +208,7 @@ class Task4:
             self.run_task()
        
         
-        # 1. Build the locality sensitive hashing index 
-        #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
-        #     1. a. Set up the hash functions from the transformation space (g1, ..., gL)
-        #     1. b. Initialize empty L hash tables  (HT1, ..., HTL)
 
-        # 2. Populate the index from the images read from the folder
-        #     2. a. Obtain feature vectors for all the input images based on the feature model provided as input
-        #     2. b. Insert every image into the LSHI
-        #         For i = 1 ... L
-        #             Compute gi(image) and store the image filename in bucket gi(image) in the ith hash table
-
-        # 3. Find t similar images for query image q
-        #         retrieved_images = []
-        #     3. a. For i = 1 ... L
-        #             Compute gi(query_image) and retrieve all the images located in the bucket gi(query_image) in the ith hash table (append to retrieved_images)
-
-        #     3. b. Compute distances between query image and retrieved_images
-
-        #     3. c. Pick the t closest images from the retrieved images
 
 def main():
     task = Task4()
