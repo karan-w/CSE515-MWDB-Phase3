@@ -1,13 +1,17 @@
 from utils.hashing.l1_hash_family import L1HashFamily
 import math
-from scipy.spatial.distance import cityblock
+from scipy.spatial.distance import cityblock, cosine, euclidean
 import operator
 
 class LSHIndex:
-    def __init__(self, k, L, vectors, hash_family_type: str):
+    def __init__(self, k, L, vectors, hash_family_type: str, radius, distance_function_type: str):
+        """
+        distance_function_type: cosine, cityblock, euclidean
+        """
         self.k = k
         self.L = L
-        self.radius = 0.1
+        self.radius = radius
+        self.distance_function_type = distance_function_type
         if hash_family_type == "l1":
             hash_family = L1HashFamily(self.radius, vectors)
             self.hash_functions = hash_family.hash_functions # List of L1HashFunction
@@ -41,8 +45,14 @@ class LSHIndex:
         # run distacne function to find most siumilar t images
         for image_filename in retrieved_image_filenames_set:
             image = images_hash_map[image_filename]
-            image.distance_from_query_image = cityblock(image.feature_vector, query_image_feature_vector)
+            if(self.distance_function_type == "cityblock"):
+                image.distance_from_query_image = cityblock(image.feature_vector, query_image_feature_vector)
+            elif(self.distance_function_type == "cosine"):
+                image.distance_from_query_image = cosine(image.feature_vector, query_image_feature_vector)
+            elif(self.distance_function_type == "euclidean"):
+                image.distance_from_query_image = euclidean(image.feature_vector, query_image_feature_vector)
             retrieved_images.append(image)
+
 
         sorted_retrieved_images = sorted(retrieved_images, key=operator.attrgetter('distance_from_query_image'))
         return sorted_retrieved_images[:t]
