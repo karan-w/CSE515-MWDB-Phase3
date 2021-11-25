@@ -63,3 +63,13 @@ class TaskHelper:
             raise Exception("Not a supported class type.")
 
         return np.array(class_labels)
+
+    def compute_query_feature_vector(self, feature_model, image):
+        if feature_model == COLOR_MOMENTS:
+            return ColorMoments().get_color_moments_fd(image.matrix)
+        elif feature_model == EXTENDED_LBP:
+            return ExtendedLocalBinaryPattern().get_elbp_fd(image.matrix)
+        elif feature_model == HISTOGRAM_OF_GRADIENTS:
+            return HistogramOfGradients().get_hog_fd(image.matrix)
+        else:
+            raise Exception(f"Unknown feature model - {feature_model}")

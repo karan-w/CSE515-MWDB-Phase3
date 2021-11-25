@@ -1,6 +1,8 @@
 import argparse
 import json
 import numpy as np
+import os
+import sys
 
 from utils.indexes.lsh_index import LSHIndex
 
@@ -25,6 +27,8 @@ class Task4:
         parser.add_argument('--feature_model', type=str, required=True)
         parser.add_argument('--query_image_path', type=str, required=True)
         parser.add_argument('--t', type=int, required=True)
+        parser.add_argument('--output_folder_path', type=str, required=True)
+        parser.add_argument('--output_filename', type=str, required=True)
 
         return parser
 
@@ -34,15 +38,21 @@ class Task4:
 
         return file_contents["drt_attributes"]['transformation_matrix']
 
-    
+    # def create_image_filenames_list(self, images): 
+    #     image_filenames = []
+    #     for image in images:
+    #         image_filenames.append(image.filename)
+
+    #     return image_filenames
+
     def execute(self):
         image_reader = ImageReader()
-        images_filename = image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
+        images = image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
 
         task_helper = TaskHelper()
-        images_feature_vector = task_helper.compute_feature_vectors(
+        images = task_helper.compute_feature_vectors(
             self.args.feature_model, 
-            images_filename)
+            images)
 
         # Read transformation_space_matrix from the file
         transformation_matrix = self.read_transformation_matrix(self.args.transformation_matrix_file_path)
@@ -55,9 +65,22 @@ class Task4:
             "l1"
             )
 
-        hash_tables = lsh_index.populate_index(images_feature_vector, images_filename)
-        with open('/Users/harshilgandhi/Documents/MWDB_Project/mwdb-phase3/CSE515-MWDB-Phase3/Submission/Code/output.json') as file1:
-            file1.write(json.dumps(hash_tables))
+        # image_filenames = self.create_image_filenames_list(images)
+
+        lsh_index.populate_index(images)
+
+        print(sys.getsizeof(lsh_index))
+
+
+        query_image = image_reader.get_query_image(self.args.query_image_path)
+        query_image_feature_vector = task_helper.compute_query_feature_vector(self.args.feature_model, query_image)
+
+        similar_images = lsh_index.get_similar_images(query_image_feature_vector, self.args.t, images)
+
+        for image in similar_images:
+            print(image.filename)
+
+        
 #         1. Build the locality sensitive hashing index 
         #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
         #     1. a. Set up the hash functions from the transformation space (g1, ..., gL)
