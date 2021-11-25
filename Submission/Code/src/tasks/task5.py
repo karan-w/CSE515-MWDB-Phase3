@@ -68,7 +68,7 @@ class Task5:
     def initialize_candidates_va_ssa(self,k):
         self.dst=[]
         for i in range(k):
-            self.dst[i]=sys.maxsize
+            self.dst.append(sys.maxsize)
         return sys.maxsize
 
 
@@ -77,7 +77,8 @@ class Task5:
         ans = [0]*len(self.dst)
         if d<self.dst[n]:
             self.dst[n] = d
-            df = pd.DataFrame(ans,self.dst)
+            df = pd.DataFrame([ans,self.dst])
+            print(df)
             df = df.sort_values(self.dst,ascending=False)
         return self.dst[n]
 
@@ -98,18 +99,40 @@ class Task5:
         for i in range(len(vectors)):
             l,_ = self.get_bounds(a[i],vq)
             if l<d:
-                d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i,k)
+                d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i,k-1)
                 search_results.append(d)
+    
+    def getRecomputationMatrix(self,vectors):
+        if 'right_factor_matrix' in vectors.keys():
+            return vectors['right_factor_matrix']
+        elif 'k_principal_components_eigen_vectors' in vectors.keys():
+            return vectors['k_principal_components_eigen_vectors']
+        elif 'components' in vectors.keys():
+            return vectors['components']
+        else: return vectors['centroids']
+    
+    def getReprojection(self,vectors,mat,comp):
+        if 'right_factor_matrix' in vectors.keys():
+            return SingularValueDecomposition().compute_reprojection(mat,comp)
+        elif 'k_principal_components_eigen_vectors' in vectors.keys():
+            return PrincipalComponentAnalysis().compute_reprojection(mat,comp)
+        elif 'components' in vectors.keys():
+            return LatentDirichletAllocation().compute_reprojection(mat,comp)
+        else: return KMeans().compute_reprojection(mat,comp)
+
 
 def main():
     task = Task5()
     b=3
     images,vectors = task.feature_vector()
-    comp = vectors['k_principal_components_eigen_vectors']
-    vectors=vectors['reduced_dataset_feature_vector']
-    k=np.shape(vectors)[1]
+    # print(vectors)
+    # comp = vectors['k_principal_components_eigen_vectors']
+    comp = task.getRecomputationMatrix(vectors)
+    # print(comp)
+    reduced_feature_vector=vectors['reduced_dataset_feature_vector']
+    k=np.shape(reduced_feature_vector)[1]
     bits_per_image=k*b
-    va,partition_points=task.VA_File(bits_per_image,vectors)
+    va,partition_points=task.VA_File(bits_per_image,reduced_feature_vector)
 
     va_strings = [{images[x].filename:''.join(va.loc[x])} for x in range(len(va))]
     output = task.Generate_Output(len(images)*bits_per_image/8,va_strings)
@@ -121,19 +144,11 @@ def main():
     #Get Query Image
     image = ImageReader().get_query_image('D:\MWDB\\test.png')
     # print(image)
-    recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
-    # print(recomp)
-    r=[]
-    lower_bounds = []
-    upper_bounds = []
-    for i in range(k):
-        for x in range(len(partition_points[i])-1):
-            if (partition_points[i][x]<=recomp[i]) and (recomp[i]<partition_points[i][x+1]):
-                r.append(bi[x])
-    r = ''.join(r)
-    print(r)
+    # recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
+    recomp = task.getReprojection(vectors,image.matrix.flatten(),comp)
+    print(recomp)
 
-    task.va_ssa(k, vectors, recomp,va)
+    task.va_ssa(k, reduced_feature_vector, recomp,va)
 
 if __name__ == "__main__":
     main()
