@@ -7,8 +7,9 @@ class LSHIndex:
     def __init__(self, k, L, vectors, hash_family_type: str):
         self.k = k
         self.L = L
+        self.radius = 0.1
         if hash_family_type == "l1":
-            hash_family = L1HashFamily(L, vectors)
+            hash_family = L1HashFamily(self.radius, vectors)
             self.hash_functions = hash_family.hash_functions # List of L1HashFunction
         
         self.hash_tables = []
