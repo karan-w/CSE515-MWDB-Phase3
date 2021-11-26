@@ -1,17 +1,21 @@
 import argparse
 import logging
 
-from tasks.utils.feature_vector import FeatureVector
+from utils.feature_vector import FeatureVector
 
 from utils.constants import IMAGE_TYPE
 
-from utils.classifiers.svm.kernel import Kernel
-from utils.classifiers.svm.multiclass_svm import MultiClassSVM
+# from utils.classifiers.svm.kernel import Kernel
+# from utils.classifiers.svm.multiclass_svm import MultiClassSVM
+
+from utils.classifiers.dt.dt import DecisionTreeClassifier
 
 from utils.image_reader import ImageReader
 from utils.constants import *
 
 from task_helper import TaskHelper
+
+from sklearn.preprocessing import LabelEncoder
 
 """
 This class implements task 1 functionality.
@@ -78,12 +82,28 @@ class Task1:
         # Step 1 - Train SVM classifier on the training images n * k 
 
 
-        linear_kernel = Kernel('linear')
-        multiclass_svm = MultiClassSVM(linear_kernel)
-        multiclass_svm.fit(training_images_reduced_feature_vectors, class_labels)
+        # linear_kernel = Kernel('linear')
+        # multiclass_svm = MultiClassSVM(linear_kernel)
+        # multiclass_svm.fit(training_images_reduced_feature_vectors, class_labels)
 
 
-        # Step 2 - Train decision tree classifier on the training images n * k 
+        # Step 2 - Train decision tree classifier on the training images n * k
+
+        dt = DecisionTreeClassifier(5)
+        label_encoder = LabelEncoder()
+        y = label_encoder.fit_transform(class_labels)
+        dt.fit(training_images_reduced_feature_vectors, y)
+        labels = dt.predict(training_images_reduced_feature_vectors)
+
+        print(y)
+        print(labels)
+
+        count = 0
+        for i in range(len(labels)):
+            if(labels[i] == y[i]):
+                count += 1
+        
+        print(count/(len(labels)))
 
         # Step 3 - Train personalized page rank classifier on the training images n * k 
 
