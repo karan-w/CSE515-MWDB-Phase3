@@ -8,7 +8,9 @@ from task4 import Task4
 
 import csv
 from shutil import copyfile
+import numpy as np
 
+from sklearn.svm import SVC
 from utils.image_reader import ImageReader
 
 class Task7:
@@ -30,6 +32,7 @@ class Task7:
         parser.add_argument('--output_folder_path', type=str, required=True)
         parser.add_argument('--output_filename', type=str, required=True)
         parser.add_argument('--results_file_path', type=str, required=False)
+        parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
 
         return parser
     
@@ -68,6 +71,7 @@ class Task7:
             line_count = 0
             for row in csv_reader:
                 if line_count == 0:
+                    line_count += 1
                     continue
                 else:
                     image_filename = row[0]
@@ -86,7 +90,7 @@ class Task7:
         task_helper = TaskHelper()
         images = task_helper.compute_feature_vectors(
             self.args.feature_model, 
-            self.images)
+            images)
 
         images, drt_attributes = task_helper.reduce_dimensions(self.args.dimensionality_reduction_technique, images, self.args.k)
 
@@ -99,8 +103,11 @@ class Task7:
         training_images = [images_hash_map[image_filename].reduced_feature_vector for image_filename in relevant_images_filenames] \
             + [images_hash_map[image_filename].reduced_feature_vector for image_filename in irrelevant_images_filenames] 
         
+        training_images = np.reshape(training_images, newshape=(self.args.t, self.args.k))
         class_labels = [1 * len(relevant_images_filenames)] + [-1 * len(relevant_images_filenames)]
-  
+
+        svc_model = SVC(C=10, kernel='rbf')
+        svc_model.fit(training_images, class_labels)
 
     def execute(self):
         if self.args.mode == PRELIMINARY_QUERY:
