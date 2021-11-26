@@ -19,9 +19,12 @@ from task_helper import TaskHelper
 import csv
 
 class Task4:
-    def __init__(self):
-        parser = self.setup_args_parser()
-        self.args = parser.parse_args()
+    def __init__(self, args = None):
+        if args is None:
+            parser = self.setup_args_parser()
+            self.args = parser.parse_args()
+        else:
+            self.args = args
 
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
@@ -54,19 +57,6 @@ class Task4:
 
     #     return image_filenames
 
-    def reduce_dimensions(self, dimensionality_reduction_technique, images, k):
-        if dimensionality_reduction_technique == PRINCIPAL_COMPONENT_ANALYSIS:
-            return PrincipalComponentAnalysis().compute(images, k)
-        elif dimensionality_reduction_technique == SINGULAR_VALUE_DECOMPOSITION:
-            return SingularValueDecomposition().compute(images, k)
-        elif dimensionality_reduction_technique == LATENT_DIRICHLET_ALLOCATION:
-            return LatentDirichletAllocation().compute(images, k)
-        elif dimensionality_reduction_technique == KMEANS:
-            return KMeans().compute(images, k)
-        else:
-            raise Exception(
-                f"Unknown dimensionality reduction technique - {dimensionality_reduction_technique}")
-
     def extract_transformation_matrix(self, dimensionality_reduction_technique, attributes):
         transformation_matrix = None
         if dimensionality_reduction_technique == PRINCIPAL_COMPONENT_ANALYSIS:
@@ -91,8 +81,16 @@ class Task4:
         Output().save_dict_as_json_file(output, output_json_path)
 
     def generate_transformation_matrix(self):
+        self.image_reader = ImageReader()
+        self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
+
+        self.task_helper = TaskHelper()
+        self.images = self.task_helper.compute_feature_vectors(
+            self.args.feature_model, 
+            self.images)
+
         # 1. Perform dimensionality reduction
-        self.images, self.drt_attributes = self.reduce_dimensions(self.args.dimensionality_reduction_technique, self.images, self.args.k)
+        self.images, self.drt_attributes = self.task_helper.reduce_dimensions(self.args.dimensionality_reduction_technique, self.images, self.args.k)
 
         # 2. Extract the transformation matrix on the basis of the drt technique used
         transformation_matrix = self.extract_transformation_matrix(self.args.dimensionality_reduction_technique, self.drt_attributes)
@@ -142,7 +140,7 @@ class Task4:
 
             experiment_writer.writerow(row)
 
-    def run_task(self):
+    def get_similar_images(self):
                 # 1. Build the locality sensitive hashing index 
         #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
         #     1. a. Set up the hash functions from the transformation space (g1, ..., gL)
@@ -164,6 +162,13 @@ class Task4:
         #     3. c. Pick the t closest images from the retrieved images
 
         # Read transformation_space_matrix from the file
+        self.image_reader = ImageReader()
+        self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
+
+        self.task_helper = TaskHelper()
+        self.images = self.task_helper.compute_feature_vectors(
+            self.args.feature_model, 
+            self.images)
         transformation_matrix = self.read_transformation_matrix(self.args.transformation_matrix_file_path)
         transformation_matrix = np.array(transformation_matrix)
 
@@ -187,28 +192,17 @@ class Task4:
 
         similar_images = lsh_index.get_similar_images(query_image_feature_vector, self.args.t, self.images)
         
-        print("Cityblock Distance")
-        for image in similar_images:
-            print(image.filename)
+        return similar_images
 
-        self.evaluate(similar_images)
+    def run_task(self):
+        similar_images = self.get_similar_images()
+        #TODO: Save similar images to JSON file
 
     def execute(self):
-        self.image_reader = ImageReader()
-        self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
-
-        self.task_helper = TaskHelper()
-        self.images = self.task_helper.compute_feature_vectors(
-            self.args.feature_model, 
-            self.images)
-
         if(self.args.generate_transformation_matrix):
             self.generate_transformation_matrix()
         else:
             self.run_task()
-       
-        
-
 
 def main():
     task = Task4()

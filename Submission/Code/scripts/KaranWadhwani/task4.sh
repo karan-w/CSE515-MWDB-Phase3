@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to run task 1 on Karan's laptop
+# Script to run task 4 on Karan's laptop
 source "/Users/karanwadhwani/Documents/ASU/Fall2021/CSE515_MWDB/Project/CSE515-MWDB-Phase3/Submission/Code/venv/bin/activate"
 
 L=15
