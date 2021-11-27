@@ -95,26 +95,38 @@ class Task7:
         images, drt_attributes = task_helper.reduce_dimensions(self.args.dimensionality_reduction_technique, images, self.args.k)
 
         # Split into training and testing
-
         images_hash_map = dict()
         for image in images:
             images_hash_map[image.filename] = image
 
         training_images = [images_hash_map[image_filename].reduced_feature_vector for image_filename in relevant_images_filenames] \
             + [images_hash_map[image_filename].reduced_feature_vector for image_filename in irrelevant_images_filenames] 
+
+        test_images_reduced_feature_vector = []
+        for image in images:
+            test_images_reduced_feature_vector.append(image.reduced_feature_vector)
         
-        training_images = np.reshape(training_images, newshape=(self.args.t, self.args.k))
-        class_labels = [1 * len(relevant_images_filenames)] + [-1 * len(relevant_images_filenames)]
+        training_images = np.array(training_images)
+        class_labels = [1 for i in range(len(relevant_images_filenames))] + [-1 for j in range(len(irrelevant_images_filenames))]
 
         svc_model = SVC(C=10, kernel='rbf')
         svc_model.fit(training_images, class_labels)
+
+        predicted_class_labels = svc_model.predict(test_images_reduced_feature_vector)
+        relevant_images = dict()
+        for class_label, image in zip(predicted_class_labels, images):
+            if class_label == 1:
+                relevant_images[image] = class_label
+            else:
+                continue
+        
+        print(len(relevant_images))
 
     def execute(self):
         if self.args.mode == PRELIMINARY_QUERY:
             self.run_preliminary_query()
         elif self.args.mode == FEEDBACK_QUERY:
             self.run_feedback_query()
-
 
 def main():
     task = Task7()
