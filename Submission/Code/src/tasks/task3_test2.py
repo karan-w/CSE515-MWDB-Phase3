@@ -7,25 +7,155 @@ import time
 from task_helper import TaskHelper
 from utils.image_reader import ImageReader
 from scipy.spatial import distance
-
+import sys
+import os
 import pandas as pd
 from utils.output import Output
+
+import networkx
+
+
+def Compute_Personalized_PageRank(Subjects, TransitionMatrix, SeedNodeSet):
+    Transportation_Probability = 0.85
+    TransitionMatrix = np.array(TransitionMatrix)
+
+    Identity_Matrix = np.identity(len(Subjects), dtype=float)
+    Coefficient_of_PI = Identity_Matrix - \
+                        ((Transportation_Probability) * TransitionMatrix)
+    ReSeeding_Vector = np.zeros(len(Subjects))
+
+    P1_Teleportation_Discounting = np.zeros(len(Subjects))
+    ReSeeding_Value = 1.0 / len(SeedNodeSet)
+    for x in SeedNodeSet:
+        ReSeeding_Vector[x - 1] = ReSeeding_Value
+    PI_Value = np.dot(np.linalg.inv(Coefficient_of_PI),
+                      (1 - Transportation_Probability) * ReSeeding_Vector)
+    PI_Value = (PI_Value - min(PI_Value)) / (max(PI_Value) - min(PI_Value))
+
+    P1_ReSeeding_Value = (1 - Transportation_Probability) / len(SeedNodeSet)
+    for x in Subjects:
+        if x not in SeedNodeSet:
+            P1_Teleportation_Discounting[x - 1] = PI_Value[x -
+                                                           1] / (Transportation_Probability)
+        else:
+            P1_Teleportation_Discounting[x - 1] = (
+                                                      PI_Value[x - 1] - P1_ReSeeding_Value) / (
+                                                  Transportation_Probability)
+
+    P2_Value = P1_Teleportation_Discounting / \
+               sum(P1_Teleportation_Discounting)
+    Seed_Set_Significance = 0
+    for x in SeedNodeSet:
+        Seed_Set_Significance += P2_Value[x - 1]
+    P3_Value = P2_Value
+    for x in SeedNodeSet:
+        P3_Value[x - 1] = P1_Teleportation_Discounting[x - 1]
+    print("P3 val ", P3_Value)
+
+    return P3_Value
+    # x = {}
+    # for i, d in enumerate(P3_Value):
+    #     x[i + 1] = d
+    # x = {k: v for k, v in sorted(
+    #     x.items(), key=lambda item: item[1], reverse=True)}
+    # return list(x.keys())
+
+
+
+def Compute_Personalized_PageRank2(Subjects, TransitionMatrix, SeedNodeSet):
+    Transportation_Probability = 0.15
+    TransitionMatrix = np.array(TransitionMatrix)
+    Identity_Matrix = np.identity(len(Subjects), dtype=float)
+    Coefficient_of_PI = Identity_Matrix - \
+                        ((Transportation_Probability) * TransitionMatrix)
+    ReSeeding_Vector = np.zeros(len(Subjects))
+
+    P1_Teleportation_Discounting = np.zeros(len(Subjects))
+    ReSeeding_Value = 1.0 / len(SeedNodeSet)
+    for x in range(len(SeedNodeSet)):
+        ReSeeding_Vector[x] = ReSeeding_Value
+    PI_Value = np.dot(np.linalg.inv(Coefficient_of_PI),
+                      (1 - Transportation_Probability) * ReSeeding_Vector)
+    PI_Value = (PI_Value - min(PI_Value)) / (max(PI_Value) - min(PI_Value))
+
+    P1_ReSeeding_Value = (1 - Transportation_Probability) / len(SeedNodeSet)
+    for x in Subjects:
+        if x not in SeedNodeSet:
+            P1_Teleportation_Discounting[x - 1] = PI_Value[x -
+                                                           1] / (Transportation_Probability)
+        else:
+            P1_Teleportation_Discounting[x - 1] = (PI_Value[x - 1] - P1_ReSeeding_Value) / (
+                                                  Transportation_Probability)
+
+    P2_Value = P1_Teleportation_Discounting / sum(P1_Teleportation_Discounting)
+    Seed_Set_Significance = 0
+    # for x in SeedNodeSet:
+    #     Seed_Set_Significance += P2_Value[x - 1]
+    # P3_Value = [[[0]* len(P2_Value)] for i in range(len(P2_Value))]
+    P3_Value=P2_Value
+    for x in range(len(SeedNodeSet)):
+        P3_Value[x] = P1_Teleportation_Discounting[x]
+    print("P3 value ",P3_Value)
+    x = {}
+    for i, d in enumerate(P3_Value):
+        x[i + 1] = d
+    x = {k: v for k, v in sorted(
+        x.items(), key=lambda item: item[1], reverse=True)}
+    return P3_Value
+    # return list(x.keys())
+
 
 def calculate_efficiency(image_label_dict, test_all_labels):
     count=0
     for i,j in zip(image_label_dict.values(),test_all_labels):
-        print(i, j)
-        if i==j:
-            count+=1
-    print("correct "+count)
-    rate = count/len(test_all_labels)
-    print("eff. "+rate)
+        if ".png" in i:
+            i=i[:-4]
+        if ".png" in j:
+            j = j[:-4]
 
-def ppr(teleportation_matrix, random_walk, alpha):
+        print(j,"-", i)
+        if i==j:
+            print("===========victory==============")
+            count+=1
+    print("correct ",count)
+    rate = count/len(test_all_labels)
+    print("eff. ",rate)
+
+def ppr(teleportation_matrix, random_walk, len_seed, alpha):
     identity_matrix = np.identity(len(random_walk),dtype=float)
     inv = np.linalg.inv(identity_matrix - random_walk)
     pi = np.dot(inv,teleportation_matrix)
-    return pi
+
+    pi = (pi - min(pi)) / (max(pi) - min(pi))
+
+    print("pi",pi)
+
+    P1_Teleportation_Discounting = np.zeros(len(teleportation_matrix))
+
+    P1_ReSeeding_Value = (1 - alpha) / len_seed
+    for x in range(len(teleportation_matrix)):
+        if teleportation_matrix[x][0]==0:
+            P1_Teleportation_Discounting[x] = pi[x] / (alpha)
+        else:
+            P1_Teleportation_Discounting[x] = (pi[x] - P1_ReSeeding_Value) / (
+                                                  alpha)
+    print("p1 teleport discount ", P1_Teleportation_Discounting)
+
+    P2_Value = P1_Teleportation_Discounting / sum(P1_Teleportation_Discounting)
+
+    print("p2 val ", P2_Value)
+
+    Seed_Set_Significance = 0
+    for x in range(len(teleportation_matrix)):
+        Seed_Set_Significance += P2_Value[x]
+    P3_Value = P2_Value
+
+
+    for x in range(len(teleportation_matrix)):
+        P3_Value[x] = P1_Teleportation_Discounting[x]
+
+    print("p3 ", P3_Value)
+    return P3_Value
 
 def compute_image_feature_map(image_list,feature):
     img_feature_map=dict()
@@ -44,14 +174,18 @@ def calculate_label_images_map(train_images_names, train_all_labels):
     return label_images_map
 
 
-def compute_seed_matrix(label_images_list,alpha=0.85):
+def compute_seed_matrix(label_images_list,n,image_index_map, alpha=0.85):
 
-    teleportation_matrix = [[0.0 for j in range(1)] for i in range(len(label_images_list))]
+    teleportation_matrix = [[0.0 for j in range(1)] for i in range(n)]
 
-    for i in range(len(label_images_list)):
-        teleportation_matrix[i][0]=(1-alpha)/len(label_images_list)
-    teleportation_matrix = np.array(teleportation_matrix)
-    return teleportation_matrix
+    # for i in range(len(label_images_list)):
+    #     teleportation_matrix[i][0]=(1-alpha)/len(label_images_list)
+
+    for i in label_images_list:
+        teleportation_matrix[image_index_map[i]][0]=(1-alpha)/len(label_images_list)
+
+    teleportation_matrix_np = np.array(teleportation_matrix)
+    return teleportation_matrix,teleportation_matrix_np
 
 # def compute_random_walk(image_feature_map,alpha=0.85,kk=10):
 #     similarity_matrix=dict()
@@ -123,9 +257,8 @@ def compute_random_walk(image_feature_map,alpha=0.85,kk=20):
     # random_walk = random_walk.to(device)
     random_walk=list()
     for image1, feature1 in image_feature_map.items():
-        print("img : ",image1)
+        # print("img : ",image1)
         similar_list=[]
-
         # ========================================================
 
         for image2, feature2 in image_feature_map.items():
@@ -135,12 +268,8 @@ def compute_random_walk(image_feature_map,alpha=0.85,kk=20):
             else:
                 # dist=0
                 similar_list.append(0)
-
-        # ----------------------------------------------------------
-
-
-        # ==========================================================
-
+            # ----------------------------------------------------------
+            # ==========================================================
 
         similar_list_truncated = sorted(similar_list, reverse=True)[:kk]
         for i in range(len(similar_list)):
@@ -148,7 +277,8 @@ def compute_random_walk(image_feature_map,alpha=0.85,kk=20):
                 similar_list_truncated.remove(similar_list[i])
             else:
                 similar_list[i]=0
-        # similar_list = [(alpha*i)/sum(similar_list) for i in similar_list]
+
+            # similar_list = [(alpha*i)/sum(similar_list) for i in similar_list]
         summ=sum(similar_list)
         similar_list = [(alpha*i)/summ for i in similar_list]
         random_walk.append(similar_list)
@@ -160,30 +290,57 @@ def compute_random_walk(image_feature_map,alpha=0.85,kk=20):
 
 def associate_labels_to_test_images(test_images_names,labelled_ppr,label_list):
 
-    label_count=dict()
+    print("-=========================================")
+    for ll in labelled_ppr.keys():
+        print("label ",ll)
+        print(labelled_ppr[ll])
+        print("---------------------------------")
 
+    print("==========================================")
+    # label_count=dict()
+    query_index_in_label=dict()
     image_label_dict=dict()
-
-    for l in label_list:
-        label_count[l]=-1
-
-        for i in range(len(test_images_names)):
-            for j in labelled_ppr.keys():
-                for k in range(len(labelled_ppr[j])):
-                    if labelled_ppr[j][0] == l:
-                        label_count[l]=k
-                        break
-        mini = 10000
-        labell=""
-        for lbl,indx in label_count.items():
-            if mini>indx:
-                mini=indx
+    print("label list ",len(label_list))
+    for name in test_images_names:
+        print("associating for test image ",name)
+        for l in label_list:
+            # print("label ",l)
+            query_index_in_label[l]=-1
+            for k in range(len(labelled_ppr[l])):
+                # print("+++++++++++++++++++labelled ppr",labelled_ppr[l][k][0])
+                if labelled_ppr[l][k][0] == name:
+                    query_index_in_label[l] = k
+                    break
+            print("index in label ppr of ",l," for image ",name," is ",query_index_in_label[l])
+        mini = sys.maxsize
+        labell = ""
+        for lbl, indx in query_index_in_label.items():
+            if mini > indx:
+                mini = indx
                 labell = lbl
 
-        image_label_dict[l]=labell
+        image_label_dict[name] = labell
 
     return image_label_dict
 
+    # for l in label_list:
+    #     label_count[l]=-1
+    #     for i in range(len(test_images_names)):
+    #         for j in labelled_ppr.keys():
+    #             for k in range(len(labelled_ppr[j])):
+    #                 if labelled_ppr[j][0] == l:
+    #                     label_count[l]=k
+    #                     break
+    #     mini = 10000
+    #     labell=""
+    #     for lbl,indx in label_count.items():
+    #         if mini>indx:
+    #             mini=indx
+    #             labell = lbl
+    #
+    #     image_label_dict[l]=labell
+    #
+    # return image_label_dict
 
 # def compute_similarity_matrix():
 
@@ -205,7 +362,6 @@ class Task1:
         # parser.add_argument('--classifier', type=str, required=True)
 
         return parser
-
 logger = logging.getLogger(Task1.__name__)
 logging.basicConfig(filename="logs/logs.log", filemode="w", level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
@@ -218,18 +374,40 @@ mypath="all/"
 start_time = time.time()
 image_reader = ImageReader()
 
-train_images = image_reader.get_all_images_in_folder("all/")
-train_images_names = image_reader.get_all_images_filenames_in_folder("all/")
+train_path="E:\\projects\\workspace\\2000\\2000"
+# train_path="all/"
+# test_path="100/100/"
 
-train_all_labels = [label.split("-")[1] for label in train_images_names]
+test_path="E:\\projects\\workspace\\500\\500"
+
+train_images = image_reader.get_all_images_in_folder(train_path)
+train_images_names = image_reader.get_all_images_filenames_in_folder(train_path)
+
+
+print("train images name ............. ",len(train_images_names))
+
+train_all_labels = [label.split("-")[2] for label in train_images_names]
+
+
+print("train label list............. ",len(train_all_labels))
 label_list = set()
 label_list.update(train_all_labels)
+print("label list............. ",len(label_list))
 
 
-test_images = image_reader.get_all_images_in_folder("100/100/")
-test_images_names = image_reader.get_all_images_filenames_in_folder("100/100")
+test_files = os.listdir(test_path)
 
-test_all_labels = [label.split("-")[1] for label in test_images_names]
+for file in test_files:
+    if "test" not in file and "image-" in file:
+        splts = file.split(".")
+        os.rename(os.path.join(test_path,file),os.path.join(test_path,splts[0]+"-test"+"."+splts[1]))
+
+
+test_images = image_reader.get_all_query_images_in_folder(test_path)
+test_images_names = image_reader.get_all_images_filenames_in_query_folder(test_path)
+
+test_all_labels = [label.split("-")[2] for label in test_images_names]
+
 
 print(len(test_images))
 
@@ -237,16 +415,21 @@ print(len(test_images[2].matrix))
 # combined_images=[]
 # combined_image_names=[]
 
+test_labels_for_train = ["test"]*len(test_all_labels)
+
 combined_images = [*train_images,*test_images]
 
 combined_image_names = [*train_images_names,*test_images_names]
+
+# combined_image_names2 = [*train_images_names,*test_labels_for_train]
+combined_labels=[*train_all_labels,*test_all_labels]
 
 print(len(combined_images))
 print(combined_images[2].matrix)
 
 feature_model="HOG"
 dimensionality_reduction_technique="PCA"
-k=10
+k=20
 
 task_helper = TaskHelper()
 combined_images = task_helper.compute_feature_vectors(
@@ -265,11 +448,16 @@ rdfv = drt_attributes['reduced_dataset_feature_vector']
 
 print("hi")
 print(type(rdfv))
+print(len(rdfv))
 image_feature_map = compute_image_feature_map(combined_image_names,rdfv)
 
-print("calculated image feature map")
+print("calculated image feature map of length ",len(image_feature_map))
 
-label_images_map = calculate_label_images_map(train_images_names,train_all_labels)
+print("combined length ",len(combined_image_names))
+
+# label_images_map = calculate_label_images_map(train_images_names,train_all_labels)
+
+label_images_map = calculate_label_images_map(combined_image_names,combined_labels)
 print("mapped label to images")
 
 # time.time()
@@ -277,35 +465,63 @@ print("---- %s seconds " % (time.time() - start_time))
 
 print("calculating random walk")
 random_walk = compute_random_walk(image_feature_map,0.85)
-print("random walk calculated..")
+print("random walk calculated.. for length ",len(random_walk))
 
 labelled_ppr=dict()
+
+image_index_map=dict()
+for i,img in enumerate(combined_image_names):
+    image_index_map[img]=i
+
+random_walk2 = np.array(random_walk)
+G = networkx.from_numpy_array(random_walk2)
 
 
 print("calculating seed and ppr for each label")
 for lbl in label_list:
-    teleportation_matrix = compute_seed_matrix(label_images_list=label_images_map[lbl],alpha=0.85)
-    df = pd.DataFrame(ppr(teleportation_matrix,random_walk,0.85))
+    if lbl!="test":
+        seeds=[]
+        for immg in label_images_map[lbl]:
+            seeds.append(image_index_map[immg])
 
-    df.insert(0,"Images",combined_image_names)
-    labelled_ppr[lbl] = list(sorted(df.values,key=lambda x:x[1],reverse=True))
+        teleportation_matrix,tele_np = compute_seed_matrix(label_images_list=label_images_map[lbl],n=len(random_walk),image_index_map=image_index_map,alpha=0.85)
+        # df = pd.DataFrame(ppr(teleportation_matrix,random_walk,len(label_images_map[lbl]),0.15))
+        df = pd.DataFrame(ppr(tele_np, random_walk, len(label_images_map[lbl]), 0.85))
+        df.insert(0, "Images", combined_image_names)
 
+        # subjects=[i+1 for i in range(len(teleportation_matrix))]
+        #    #   ----xxxxx---- df3 = pd.DataFrame(Compute_Personalized_PageRank(subjects,random_walk, label_images_map[lbl]))
+        # df3 = pd.DataFrame(Compute_Personalized_PageRank(subjects, random_walk, seeds))
+        # df3.insert(0,"Images",combined_image_names)
+
+        # personalization={}
+        # for i,t in enumerate(teleportation_matrix):
+        #     if t[0]!=0:
+        #         personalization[i]=1
+        #     else:
+        #         personalization[i]=0
+        #
+        # pagerank_dict = networkx.pagerank(G,0.85,personalization=personalization)
+        # pagerank_dict = dict(sorted(pagerank_dict.items()))
+        #
+        # df2 = pd.DataFrame(np.array(list(pagerank_dict.values())))
+        # df2.insert(0,"Images",combined_image_names)
+
+        # print("hi")
+        labelled_ppr[lbl] = list(sorted(df.values,key=lambda x:x[1],reverse=True))
 
 image_label_dict = associate_labels_to_test_images(test_images_names,labelled_ppr,label_list)
 print("associated labels to test")
 
-calculate_efficiency(image_label_dict,test_all_labels)
 print("calculating efficiency")
+calculate_efficiency(image_label_dict,test_all_labels)
+
+print("Total run time ....",time.time()-start_time," seconds")
 
 # print(image_feature_map.keys())
 # images_label_map = dict()
 
-
-
 # Output().save_dict_as_json_file(image_feature_map, "test_tmp/combined_image_feature_map.json")
-
-
-
 
 # transition_matrix = compute_similarity_matrix(image_feature_map)
 # print(len(teleportation_matrix))
@@ -313,5 +529,4 @@ print("calculating efficiency")
 
 # 4000x4000  4000x1             4000x1
 #   T         P            S
-
 # image_label_map = dict()

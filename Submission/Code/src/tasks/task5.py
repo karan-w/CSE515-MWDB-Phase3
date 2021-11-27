@@ -47,7 +47,12 @@ class Task5:
         return parser
     def feature_vector(self):
         image_reader = ImageReader()
-        training_images = image_reader.get_all_images_in_folder('D:\\MWDB\\4000') # 4800 images
+        # training_images = image_reader.get_all_images_in_folder('D:\\MWDB\\4000') # 4800 images
+
+        training_images = image_reader.get_all_images_in_folder('E:\\projects\\workspace\\1000\\1000')  # 4800 images
+
+        # E:\projects\workspace
+
         # Step 2 - Extract feature vectors of all the training images n * m
         task_helper = TaskHelper()
         training_images = task_helper.compute_feature_vectors(
@@ -207,7 +212,7 @@ def main():
     # Output().save_dict_as_json_file(output, output_json_path)
     bi = [bin(y)[2:].rjust(b, '0') for y in range(2**b)]
     #Get Query Image
-    image = ImageReader().get_query_image('D:\MWDB\\test.png')
+    image = ImageReader().get_query_image('E:\\projects\\workspace\\test.png')
     # print(image)
     # recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
     recomp = task.getReprojection(vectors,task.compute_feature_vector('CM',image.matrix),comp)
