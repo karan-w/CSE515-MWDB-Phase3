@@ -17,6 +17,15 @@ from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
 class Task5:
 
     dst=[]
+    partition_points = []
+    bounds = []
+    query_va = []
+    images_va = []
+    bounds = []
+    dimension = 0
+    distance_vector = None
+    images_count = 0
+    t = None
     def __init__(self):
         # parser = self.setup_args_parser()
         # self.args = parser.parse_args()
@@ -43,12 +52,13 @@ class Task5:
         
         return training_images
     def VA_File(self,b,vectors):
-        dimensions = np.shape(vectors)[1]
-        partition_points = [[]]*dimensions
-        bj = [0]*dimensions
-        for x in range(dimensions):
-            bj[x] = int(b/dimensions)
-            if x+1 <= b%dimensions:
+        self.images_count = np.shape(vectors)[0]
+        self.dimension = np.shape(vectors)[1]
+        partition_points = [[]]*self.dimension
+        bj = [0]*self.dimension
+        for x in range(self.dimension):
+            bj[x] = int(b/self.dimension)
+            if x+1 <= b%self.dimension:
                 bj[x]+=1
         for j in range(len(bj)):
             partition_points[j]=[0]*(pow(2,bj[j])+1)
@@ -56,6 +66,9 @@ class Task5:
         new = vectors.copy()
         for x in range(np.shape(vectors)[1]):
             new[x],partition_points[x] = pd.cut(vectors[x],2**(bj[x]),labels=[bin(y)[2:].rjust(bj[x], '0') for y in range(2**(bj[x]))],retbins=True)
+        self.partition_points = partition_points
+        for x in range(len(new)):
+            self.images_va.append(list(new.loc[x]))
         return new,partition_points
 
     def Generate_Output(self, size, va_file):
@@ -65,26 +78,25 @@ class Task5:
         }
         return output
 
-    def initialize_candidates_va_ssa(self,k):
-        self.dst=[]
-        for i in range(k):
-            self.dst.append(sys.maxsize)
+    def initialize_candidates_va_ssa(self):
+        self.distance_vector = pd.DataFrame(data=[[0,sys.maxsize] for x in range(self.t)], columns=["index", "distance"])
         return sys.maxsize
 
 
-    def candidate_va_ssa(self,d,i,n):
+    def candidate_va_ssa(self,d,i):
+        n = self.t - 1
+        # ans = [0]*len(self.distance_vector)
+        if d<self.distance_vector.loc[n]['distance']:
+            self.distance_vector.loc[n]['distance'] = d
+            self.distance_vector.loc[n]['index'] = i
+            # df = pd.DataFrame([ans,self.dst])
+            # print(df)
+            self.distance_vector = self.distance_vector.sort_values('distance',ascending='False')
+        # print(self.distance_vector)
+        return self.distance_vector.loc[n]['distance']
 
-        ans = [0]*len(self.dst)
-        if d<self.dst[n]:
-            self.dst[n] = d
-            df = pd.DataFrame([ans,self.dst])
-            print(df)
-            df = df.sort_values(self.dst,ascending=False)
-        return self.dst[n]
-
-    def get_bounds(self,ai,vq):
-        # TODO implement upper and lower bound calc.
-        return 1,2
+    def get_bounds(self,i):
+        return self.bounds[i]
 
     def lp_metric(self,vi,vq,p):
 
@@ -92,15 +104,19 @@ class Task5:
         for i in range(len(vi)):
             summation+=pow(abs(vi[i] - vq[i]),p)
         return pow(summation,1/p)
-    
-    def va_ssa(self,k,vectors,vq,a):
-        d = self.initialize_candidates_va_ssa(k)
+
+    def va_ssa(self,vectors,vq,t):
+        self.t = t
+        d = self.initialize_candidates_va_ssa()
         search_results=[]
         for i in range(len(vectors)):
-            l,_ = self.get_bounds(a[i],vq)
+            l,_ = self.get_bounds(i)
             if l<d:
-                d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i,k-1)
-                search_results.append(d)
+                print(l)
+                d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i)
+                search_results.append(i)
+        print(search_results)
+        return search_results
     
     def getRecomputationMatrix(self,vectors):
         if 'right_factor_matrix' in vectors.keys():
@@ -119,6 +135,41 @@ class Task5:
         elif 'components' in vectors.keys():
             return LatentDirichletAllocation().compute_reprojection(mat,comp)
         else: return KMeans().compute_reprojection(mat,comp)
+    
+    def Generate_VA_Query_Image(self,values):
+        for d in range(len(values)):
+            if values[d]<self.partition_points[d][0]:
+                self.query_va.append('000')
+            elif values[d]>self.partition_points[d][7]:
+                self.query_va.append('111')
+            else:
+                for val in range(len(self.partition_points[d])-1):
+                    if values[d]>=self.partition_points[d][val] and values[d]<self.partition_points[d][val+1]:
+                        self.query_va.append(format(val,'03b'))
+        self.Generate_Bounds(values)
+           
+
+    def Generate_Bounds(self,vector):
+        for x in self.images_va:
+            lb = []
+            ub = []
+            for j in range(self.dimension):
+                region = int(x[j],2)
+                query_region = int(self.query_va[j],2)
+                if region<query_region:
+                    lb.append(vector[j] - self.partition_points[j][region+1])
+                elif region==query_region:
+                    lb.append(0)
+                elif region>query_region:
+                    lb.append(self.partition_points[j][region] - vector[j])
+                if region<query_region:
+                    ub.append(vector[j] - self.partition_points[j][region])
+                elif region==query_region:
+                    ub.append(max(vector[j] - self.partition_points[j][region],self.partition_points[j][region+1] - vector[j]))
+                elif region>query_region:
+                    ub.append(self.partition_points[j][region+1] - vector[j])
+            self.bounds.append((sum(lb),sum(ub)))
+        return self.bounds
 
 
 def main():
@@ -133,7 +184,6 @@ def main():
     k=np.shape(reduced_feature_vector)[1]
     bits_per_image=k*b
     va,partition_points=task.VA_File(bits_per_image,reduced_feature_vector)
-
     va_strings = [{images[x].filename:''.join(va.loc[x])} for x in range(len(va))]
     output = task.Generate_Output(len(images)*bits_per_image/8,va_strings)
     OUTPUT_FILE_NAME = 'output.json'
@@ -144,11 +194,13 @@ def main():
     #Get Query Image
     image = ImageReader().get_query_image('D:\MWDB\\test.png')
     # print(image)
-    # recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
+    recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
     recomp = task.getReprojection(vectors,image.matrix.flatten(),comp)
-    print(recomp)
-
-    task.va_ssa(k, reduced_feature_vector, recomp,va)
+    task.Generate_VA_Query_Image(recomp)
+    result = task.va_ssa(reduced_feature_vector,recomp,10)
+    result = [images[x].filename for x in result]
+    print(result)
+    # task.va_ssa(k, reduced_feature_vector, recomp,va)
 
 if __name__ == "__main__":
     main()
