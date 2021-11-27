@@ -36,9 +36,13 @@ class Task7:
 
         return parser
     
-    def save_similar_images(self, similar_images):
+    def save_similar_images(self, similar_images, feedback=False):
         # Save CSV of similar images along with distances 
-        csv_path = os.path.join(self.args.output_folder_path, "similar_images.csv")
+        csv_filename = "similar_images.csv"
+        if feedback: 
+            csv_filename = "similar_images_feedback.csv"
+        csv_path = os.path.join(self.args.output_folder_path, csv_filename)
+        
         with open(csv_path, mode='w') as similar_images_csv_file:
             writer = csv.writer(similar_images_csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             writer.writerow(['Image Filename', 'Distance From Query Image', 'Feedback'])
@@ -46,7 +50,11 @@ class Task7:
                 row = [similar_image.filename, similar_image.distance_from_query_image]
                 writer.writerow(row)
 
-        destination_folder = os.path.join(self.args.output_folder_path, "similar_images")
+        similar_images_folder_name = "similar_images"
+        if feedback:
+            similar_images_folder_name = "similar_images_feedback"
+
+        destination_folder = os.path.join(self.args.output_folder_path, similar_images_folder_name)
         os.makedirs(destination_folder)
 
         # Save similar images in a directory
@@ -113,14 +121,28 @@ class Task7:
         svc_model.fit(training_images, class_labels)
 
         predicted_class_labels = svc_model.predict(test_images_reduced_feature_vector)
-        relevant_images = dict()
+        relevant_images_hash_map = dict()
         for class_label, image in zip(predicted_class_labels, images):
             if class_label == 1:
-                relevant_images[image] = class_label
+                relevant_images_hash_map[image.filename] = class_label
             else:
                 continue
+
+        for filename in relevant_images_filenames:
+            relevant_images_hash_map[filename] = 1
+
+        for filename in irrelevant_images_filenames:
+            relevant_images_hash_map.pop(filename)
+
+        relevant_images = []
         
-        print(len(relevant_images))
+        for filename in relevant_images_hash_map:
+            relevant_images.append(images_hash_map[filename])
+            
+        task4 = Task4(self.args)
+        similar_images = task4.get_similar_images(relevant_images)
+        self.save_similar_images(similar_images, feedback=True)
+
 
     def execute(self):
         if self.args.mode == PRELIMINARY_QUERY:

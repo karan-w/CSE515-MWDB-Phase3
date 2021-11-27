@@ -140,7 +140,7 @@ class Task4:
 
             experiment_writer.writerow(row)
 
-    def get_similar_images(self):
+    def get_similar_images(self, images = None):
                 # 1. Build the locality sensitive hashing index 
         #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
         #     1. a. Set up the hash functions from the transformation space (g1, ..., gL)
@@ -163,12 +163,18 @@ class Task4:
 
         # Read transformation_space_matrix from the file
         self.image_reader = ImageReader()
-        self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
-
         self.task_helper = TaskHelper()
-        self.images = self.task_helper.compute_feature_vectors(
-            self.args.feature_model, 
-            self.images)
+
+        if images is None:
+            self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
+
+            self.images = self.task_helper.compute_feature_vectors(
+                self.args.feature_model, 
+                self.images)
+
+        else:
+            self.images = images
+
         transformation_matrix = self.read_transformation_matrix(self.args.transformation_matrix_file_path)
         transformation_matrix = np.array(transformation_matrix)
 
