@@ -130,7 +130,33 @@ class ImageReader:
         images = sorted(images, key=lambda image: (image.subject_id, image.image_id))
         print("--- %s seconds ---" % (time.time() - start_time)) # 5.11 seconds before parallelism and 2.11 seconds after parallelism to read 4800 files 
         return images 
-    
+
+
+    def get_all_images_filenames_in_query_folder(self,folder_path):
+        image_filenames = [image_filename for image_filename in os.listdir(folder_path)]
+        image_filenames = sorted(image_filenames)
+        return image_filenames
+
+    def get_all_query_images_in_folder(self, folder_path):
+        logger.info("Reading all the images in the folder.")
+        start_time = time.time()
+
+        image_filenames = self.get_all_images_filenames_in_query_folder(folder_path)
+        images = []
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            for image_filename in image_filenames:
+
+                futures.append(executor.submit(self.get_query_image,os.path.join(folder_path,image_filename)))
+            for index, future in enumerate(futures):
+                images.append(future.result())
+
+        print("--- %s seconds ---" % (time.time() - start_time)) # 5.11 seconds before parallelism and 2.11 seconds after parallelism to read 4800 files
+        return images
+
+
+
     def get_all_image_filenames_for_one_type(self, folder_path, image_type):
         self.image_filename_regex_image_type = f'image-{image_type}-\d*-\d*.png'
         image_filenames = [image_filename for image_filename in os.listdir(folder_path) if re.search(self.image_filename_regex_image_type, image_filename)]

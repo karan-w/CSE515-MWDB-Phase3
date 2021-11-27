@@ -43,5 +43,5 @@ class LatentDirichletAllocation:
         return images, attributes
 
     def compute_reprojection(self, query_image, components):
-        reduced_dataset_feature_vector = np.dot(query_image, np.transpose(components))
+        reduced_dataset_feature_vector = np.dot(query_image, components.T)
         return reduced_dataset_feature_vector
