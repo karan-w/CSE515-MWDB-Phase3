@@ -17,6 +17,7 @@ from utils.output import Output
 from task_helper import TaskHelper
 
 import csv
+from shutil import copyfile
 
 class Task4:
     def __init__(self, args = None):
@@ -140,6 +141,29 @@ class Task4:
 
             experiment_writer.writerow(row)
 
+    def save_similar_images(self, similar_images):
+        # Save CSV of similar images along with distances 
+        csv_filename = self.args.output_filename
+        csv_path = os.path.join(self.args.output_folder_path, csv_filename)
+        
+        with open(csv_path, mode='w') as similar_images_csv_file:
+            writer = csv.writer(similar_images_csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(['Image Filename', 'Distance From Query Image', 'Feedback'])
+            for similar_image in similar_images:
+                row = [similar_image.filename, similar_image.distance_from_query_image]
+                writer.writerow(row)
+
+        similar_images_folder_name = "similar_images"
+
+        destination_folder = os.path.join(self.args.output_folder_path, similar_images_folder_name)
+        os.makedirs(destination_folder)
+
+        # Save similar images in a directory
+        for similar_image in similar_images:
+            source = similar_image.filepath
+            destination = os.path.join(destination_folder, similar_image.filename)
+            copyfile(source, destination)
+
     def get_similar_images(self, images = None):
                 # 1. Build the locality sensitive hashing index 
         #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
@@ -202,7 +226,7 @@ class Task4:
 
     def run_task(self):
         similar_images = self.get_similar_images()
-        #TODO: Save similar images to JSON file
+        self.save_similar_images(similar_images)
 
     def execute(self):
         if(self.args.generate_transformation_matrix):

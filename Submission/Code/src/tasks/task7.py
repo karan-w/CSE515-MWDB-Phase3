@@ -55,7 +55,10 @@ class Task7:
             similar_images_folder_name = "similar_images_feedback"
 
         destination_folder = os.path.join(self.args.output_folder_path, similar_images_folder_name)
-        os.makedirs(destination_folder)
+        try:
+            os.makedirs(destination_folder)
+        except:
+            pass
 
         # Save similar images in a directory
         for similar_image in similar_images:
@@ -90,7 +93,7 @@ class Task7:
                     elif label == 'I':
                         irrelevant_images_filenames.append(image_filename)
                     else:
-                        irrelevant_images_filenames.append(image_filename) #ASSUMPTION!!
+                        continue
         
         image_reader = ImageReader()
         images = image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
@@ -132,7 +135,8 @@ class Task7:
             relevant_images_hash_map[filename] = 1
 
         for filename in irrelevant_images_filenames:
-            relevant_images_hash_map.pop(filename)
+            if filename in relevant_images_hash_map:
+                relevant_images_hash_map.pop(filename)
 
         relevant_images = []
         
