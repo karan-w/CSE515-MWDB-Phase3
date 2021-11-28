@@ -1,6 +1,7 @@
 import sys
 import argparse
 import os
+import json
 from utils.image_reader import ImageReader
 from task_helper import TaskHelper
 import numpy as np
@@ -29,115 +30,129 @@ class Task5:
     distance_vector = None
     images_count = 0
     t = None
-    def __init__(self):
-        # parser = self.setup_args_parser()
-        # self.args = parser.parse_args()
-        pass
+    bits = 0
+    data = []
+    images = None
+    recomp = None
+    def __init__(self,args=None):
+        if args is None:
+            parser = self.setup_args_parser()
+            self.args = parser.parse_args()
+        else:
+            self.args = args
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
 
-        parser.add_argument('--b', type=str, required=True)
+        parser.add_argument('--b', type=int, required=True)
         parser.add_argument('--feature_model', type=str, required=True)
-        parser.add_argument('--t', type=str, required=True)
-        parser.add_argument('--reduced_dimensions_count', type=int, required=True)
-        parser.add_argument('--training_images_folder_path', type=str, required=True)
+        parser.add_argument('--t', type=int, required=True)
+        parser.add_argument('--k', type=int, required=True)
         parser.add_argument('--output_folder_path', type=str, required=True)
+        parser.add_argument('--images_folder_path', type=str, required=True)
         parser.add_argument('--latent_semantics_file', type=str, required=True)
-        #parser.add_argument('--classifier', type=str, required=True) change to file path and take feature vector of the images
+        parser.add_argument('--query_image_path', type=str, required=True)
+        parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
+        parser.add_argument('--generate_va_file', type=str, required=False)
         return parser
     def feature_vector(self):
+        #Compute feature vectors for all the images in the given folder
         image_reader = ImageReader()
-        # training_images = image_reader.get_all_images_in_folder('D:\\MWDB\\4000') # 4800 images
-
-        training_images = image_reader.get_all_images_in_folder('E:\\projects\\workspace\\1000\\1000')  # 4800 images
-
-        # E:\projects\workspace
-
-        # Step 2 - Extract feature vectors of all the training images n * m
+        training_images = image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
         task_helper = TaskHelper()
         training_images = task_helper.compute_feature_vectors(
-            'CM', 
+            self.args.feature_model, 
             training_images)
-        # Step 3 - Reduce the dimensions of the feature vectors of all the training images n * k
-        training_images = task_helper.reduce_dimensions(
-            'PCA', 
-            training_images, 
-            5)
         
         return training_images
-    def compute_feature_vector(self, feature_model, image):
-        if feature_model == COLOR_MOMENTS:
+    def read_latent_semantics_file(self):
+        # Read the latent semantics file 
+        self.data = json.load(open(os.path.join(self.args.latent_semantics_file,'{0}-{1}-{2}.json'.format(self.args.feature_model,self.args.k,self.args.dimensionality_reduction_technique))))
+
+    def compute_feature_vector(self, image):
+        #Compute the feature vector for an image
+        if self.args.feature_model == COLOR_MOMENTS:
             return ColorMoments().get_color_moments_fd(image)
-        elif feature_model == EXTENDED_LBP:
+        elif self.args.feature_model == EXTENDED_LBP:
             return ExtendedLocalBinaryPattern().get_elbp_fd(image)
-        elif feature_model == HISTOGRAM_OF_GRADIENTS:
+        elif self.args.feature_model == HISTOGRAM_OF_GRADIENTS:
             return HistogramOfGradients().get_hog_fd(image)
         else:
-            raise Exception(f"Unknown feature model - {feature_model}")
-    def VA_File(self,b,vectors):
-        self.images_count = np.shape(vectors)[0]
-        self.dimension = np.shape(vectors)[1]
-        partition_points = [[]]*self.dimension
-        bj = [0]*self.dimension
+            raise Exception(f"Unknown feature model - {self.args.feature_model}")
+
+    def VA_File(self):
+        # Compute the VA-File Index Structure for the given dataset
+        vectors = self.images
+        self.images_count = np.shape(self.images)[0]
+        self.dimension = np.shape(self.images)[1]
+        b=self.args.b*self.args.k #Total number of bits assigned to each image of the dataset
+        partition_points = [[]]*self.dimension #partition points for each dimension
+        bj = [0]*self.dimension #Number of bits to be used for each dimension
+        # Calculate the size of the partition points for each dimension
         for x in range(self.dimension):
             bj[x] = int(b/self.dimension)
             if x+1 <= b%self.dimension:
                 bj[x]+=1
+        # Partition points are assigned the size of 2^(bits in that dimension + 1)
         for j in range(len(bj)):
             partition_points[j]=[0]*(pow(2,bj[j])+1)
+        # The vectors are stored in a pandas dataframe
         vectors = pd.DataFrame(vectors)
         new = vectors.copy()
-        for x in range(np.shape(vectors)[1]):
+        # Each dimension is divided into regions that have the size of partition points in that dimension and each dimension of each image is assigned a binary value of the region it liews in  
+        for x in range(self.dimension):
             new[x],partition_points[x] = pd.cut(vectors[x],2**(bj[x]),labels=[bin(y)[2:].rjust(bj[x], '0') for y in range(2**(bj[x]))],retbins=True)
         self.partition_points = partition_points
+        # Storing VA-File strings of each image
         for x in range(len(new)):
             self.images_va.append(list(new.loc[x]))
         return new,partition_points
 
-    def Generate_Output(self, size, va_file):
+    def Generate_Output(self, size, va_file,result):
         output = {
             'Size of Index Structure': str(size) + ' bytes.',
             'Approximations': va_file,
+            '{0} Most Similar Images'.format(self.args.t):['{0} -> Distance : {1}'.format(result[x].filename,result[x].distance_from_query_image) for x in range(len(result))]
         }
         return output
 
     def initialize_candidates_va_ssa(self):
-        self.distance_vector = pd.DataFrame(data=[[0,sys.maxsize] for x in range(self.t)], columns=["index", "distance"])
+        # initialize the vector that will have the t most similar images to the query image with index 0 and distance having maxInt 
+        self.distance_vector = pd.DataFrame(data=[[0,sys.maxsize] for x in range(self.args.t)], columns=["index", "distance"])
         return sys.maxsize
 
 
     def candidate_va_ssa(self,d,i):
-        n = self.t - 1
-        # ans = [0]*len(self.distance_vector)
+        # If a candidate is found, replace the least similar image from the vector of size t with the new candidate 
+        n = self.args.t - 1
         if d<self.distance_vector.iloc[n]['distance']:
             self.distance_vector.iloc[n]['distance'] = d
             self.distance_vector.iloc[n]['index'] = i
-            # df = pd.DataFrame([ans,self.dst])
-            # print(df)
             self.distance_vector = self.distance_vector.sort_values('distance')
-        # print(self.distance_vector)
         return self.distance_vector.iloc[n]['distance']
 
     def get_bounds(self,i):
+        # returns the lower and upeer bound of the ith image
         return self.bounds[i]
 
     def lp_metric(self,vi,vq,p):
-
+        # Computes the distance between 2 vectors
         summation=0
         for i in range(len(vi)):
             summation+=pow(abs(vi[i] - vq[i]),p)
         return pow(summation,1/p)
 
-    def va_ssa(self,vectors,vq,t):
-        self.t = t
-        d = self.initialize_candidates_va_ssa()
+    def va_ssa(self,vectors,vq):
+        # Initialize the array of t with the base values and assign the maximum integer value to d
+        d = self.initialize_candidates_va_ssa() 
+        # for all images in th folder check if the distance between image vector and the query vector become a candidate, if yes assign this newly calculated distance to d 
         for i in range(len(vectors)):
-            l,_ = self.get_bounds(i)
-            if l<d:
+            l,_ = self.get_bounds(i) # l is the ower bound of image i
+            if l<d: # if lower bound is less than the current distance, this image is a candidate
                 d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i)
-        return self.distance_vector['index'].to_list()
+        return self.distance_vector
     
     def getRecomputationMatrix(self,vectors):
+        # Return the appropriate vector for query image reprojection on the feature space
         if 'right_factor_matrix' in vectors.keys():
             return vectors['right_factor_matrix']
         elif 'k_principal_components_eigen_vectors' in vectors.keys():
@@ -147,6 +162,7 @@ class Task5:
         else: return vectors['centroids']
     
     def getReprojection(self,vectors,mat,comp):
+        # Reproject the query image on the feature space
         if 'right_factor_matrix' in vectors.keys():
             return SingularValueDecomposition().compute_reprojection(mat,comp)
         elif 'k_principal_components_eigen_vectors' in vectors.keys():
@@ -156,19 +172,24 @@ class Task5:
         else: return KMeans().compute_reprojection(mat,comp)
     
     def Generate_VA_Query_Image(self,values):
+        # Assign bits for all the dimensions according to the partition points of the dimension
         for d in range(len(values)):
+            # Dimension : d
             if values[d]<self.partition_points[d][0]:
-                self.query_va.append('000')
+                self.query_va.append('0'*self.bits)
             elif values[d]>self.partition_points[d][7]:
-                self.query_va.append('111')
+                self.query_va.append('1'*self.bits)
             else:
+                # Loop over all the partition points of dimension d and assign region for that dimension of the query image
                 for val in range(len(self.partition_points[d])-1):
                     if values[d]>=self.partition_points[d][val] and values[d]<self.partition_points[d][val+1]:
-                        self.query_va.append(format(val,'03b'))
+                        self.query_va.append(format(val,'0{0}b'.format(self.bits)))
+        # Generate lower and upper bounds of each image in the database with the query image
         self.Generate_Bounds(values)
            
 
     def Generate_Bounds(self,vector):
+        # Calculate lower and upper bounds each image 
         for x in self.images_va:
             lb = []
             ub = []
@@ -190,37 +211,62 @@ class Task5:
             self.bounds.append((sum(lb),sum(ub)))
         return self.bounds
 
+    def reproject_query_image(self):
+        # Read query image
+        image = ImageReader().get_query_image(self.args.query_image_path)
+        # Project query image on the feature space
+        self.recomp = self.getReprojection(self.data['drt_attributes'],self.compute_feature_vector(image.matrix),self.comp)
+        # Generate VA string for the query image
+        self.Generate_VA_Query_Image(self.recomp)
+
+    def project_images(self):
+        # Get the dimensionality reduction technique m*k matrix
+        self.comp = self.getRecomputationMatrix(self.data['drt_attributes'])
+        new_vector = []
+        for x in self.images:
+            # Prooject each image in the database on the latent semantic file
+            new_vector.append(self.getReprojection(self.data['drt_attributes'],x.feature_vector,self.comp))
+        return new_vector
+
+    def generate_ouput(self,final):
+        # Generate output
+        output = self.Generate_Output(len(self.images)*(self.args.b*self.args.k)/8,self.va_strings,final)
+        OUTPUT_FILE_NAME = 'output.json'
+        timestamp_folder_path = Output().create_timestamp_folder(self.args.output_folder_path)  # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
+        output_json_path = os.path.join(timestamp_folder_path, OUTPUT_FILE_NAME)
+        Output().save_dict_as_json_file(output, output_json_path)
+
+    def get_similar_images(self,images=None):
+        # Read latent semantic file 
+        self.read_latent_semantics_file() 
+        if images==None:
+            self.images = self.feature_vector()
+        else: self.images = images
+        self.original_images = self.images.copy()
+        # Project all the images on the latent space
+        self.images = self.project_images()
+        #Compute the VA-Files
+        va,_ = self.VA_File()
+        # Compute VA strings for all images : format --> filename : k*b bits representation
+        self.va_strings = {self.original_images[x].filename:''.join(va.loc[x]) for x in range(len(va))}
+        # Project query image on the latent space
+        if self.recomp==None:
+            self.reproject_query_image()
+        # Compute the t most similar images with respect to query image in the database
+        result = self.va_ssa(self.images,self.recomp)
+        final = [self.original_images[result.iloc[x]['index']] for x in range(len(result))]
+        # for t most similar images, store its distance from the query image
+        for x in range(len(final)):
+            final[x].distance_from_query_image = result.iloc[x]['distance']
+        return final
+    def execute(self):
+        result = self.get_similar_images()
+        self.generate_ouput(result)
 
 def main():
     task = Task5()
-    b=3
-    images,vectors = task.feature_vector()
-    # print(vectors)
-    # comp = vectors['k_principal_components_eigen_vectors']
-    comp = task.getRecomputationMatrix(vectors)
-    # print(comp)
-    reduced_feature_vector=vectors['reduced_dataset_feature_vector']
-    k=np.shape(reduced_feature_vector)[1]
-    bits_per_image=k*b
-    va,partition_points=task.VA_File(bits_per_image,reduced_feature_vector)
-    va_strings = {images[x].filename:''.join(va.loc[x]) for x in range(len(va))}
-    print(va_strings['image-original-19-2.png'])
-    output = task.Generate_Output(len(images)*bits_per_image/8,va_strings)
-    # OUTPUT_FILE_NAME = 'output.json'
-    # timestamp_folder_path = Output().create_timestamp_folder('D:\MWDB\CSE515-MWDB-Phase3\Submission\Outputs\Task5')  # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
-    # output_json_path = os.path.join(timestamp_folder_path, OUTPUT_FILE_NAME)
-    # Output().save_dict_as_json_file(output, output_json_path)
-    bi = [bin(y)[2:].rjust(b, '0') for y in range(2**b)]
-    #Get Query Image
-    image = ImageReader().get_query_image('E:\\projects\\workspace\\test.png')
-    # print(image)
-    # recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
-    recomp = task.getReprojection(vectors,task.compute_feature_vector('CM',image.matrix),comp)
-    task.Generate_VA_Query_Image(recomp)
-    result = task.va_ssa(reduced_feature_vector,recomp,10)
-    result = [images[x].filename for x in result]
-    print(result)
-    # task.va_ssa(k, reduced_feature_vector, recomp,va)
+    task.execute()
+
 
 if __name__ == "__main__":
     main()
