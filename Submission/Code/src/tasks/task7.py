@@ -4,6 +4,7 @@ import argparse
 from task_helper import TaskHelper
 
 from utils.constants import FEEDBACK_QUERY, PRELIMINARY_QUERY
+from task5 import Task5
 from task4 import Task4
 
 import csv
@@ -21,16 +22,19 @@ class Task7:
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('--mode', type=str, choices=[PRELIMINARY_QUERY, FEEDBACK_QUERY], required=True)
-        parser.add_argument('--L', type=int, required=True)
+        parser.add_argument('--index_tool', type=str,choices=['LSH','VA-File'], required=False)
+        parser.add_argument('--L', type=int, required=False)
         parser.add_argument('--k', type=int, required=True)
-        parser.add_argument('--input_type', type=str, required=True)
-        parser.add_argument('--transformation_matrix_file_path', type=str, required=True)
+        parser.add_argument('--b', type=int, required=False)
+        parser.add_argument('--latent_semantics_file', type=str, required=False)
+        parser.add_argument('--input_type', type=str, required=False)
+        parser.add_argument('--transformation_matrix_file_path', type=str, required=False)
         parser.add_argument('--images_folder_path', type=str, required=True)
         parser.add_argument('--feature_model', type=str, required=True)
         parser.add_argument('--query_image_path', type=str, required=True)
         parser.add_argument('--t', type=int, required=True)
         parser.add_argument('--output_folder_path', type=str, required=True)
-        parser.add_argument('--output_filename', type=str, required=True)
+        parser.add_argument('--output_filename', type=str, required=False)
         parser.add_argument('--results_file_path', type=str, required=False)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
 
@@ -68,8 +72,12 @@ class Task7:
 
     def run_preliminary_query(self):
         # We use task 4 to run the preliminary query
-        task4 = Task4(self.args)
-        similar_images = task4.get_similar_images()
+        if self.args.index_tool == 'LSH':
+            task4 = Task4(self.args)
+            similar_images = task4.get_similar_images()
+        else:
+            task5 = Task5(self.args)
+            similar_images = task5.get_similar_images()
         self.save_similar_images(similar_images)
 
     def run_feedback_query(self):
@@ -143,8 +151,12 @@ class Task7:
         for filename in relevant_images_hash_map:
             relevant_images.append(images_hash_map[filename])
             
-        task4 = Task4(self.args)
-        similar_images = task4.get_similar_images(relevant_images)
+        if self.args.index_tool == 'LSH':
+            task4 = Task4(self.args)
+            similar_images = task4.get_similar_images(relevant_images)
+        else:
+            task5 = Task5(self.args)
+            similar_images = task5.get_similar_images(relevant_images)
         self.save_similar_images(similar_images, feedback=True)
 
 
