@@ -18,6 +18,7 @@ from utils.feature_models.hog import HistogramOfGradients
 from utils.feature_models.elbp import ExtendedLocalBinaryPattern
 from utils.feature_models.cm import ColorMoments
 import time
+from scipy.spatial import distance
 
 
 class Task5:
@@ -31,6 +32,7 @@ class Task5:
     dimension = 0
     distance_vector = None
     images_count = 0
+    images_considered = 0
     t = None
     bits = 0
     data = []
@@ -112,7 +114,9 @@ class Task5:
         output = {
             'Size of Index Structure': str(size) + ' bytes.',
             'Approximations': va_file,
-            '{0} Most Similar Images'.format(self.args.t):['{0} -> Distance : {1}'.format(result[x].filename,result[x].distance_from_query_image) for x in range(len(result))]
+            '{0} Most Similar Images'.format(self.args.t):['{0} -> Distance : {1}'.format(result[x].filename,result[x].distance_from_query_image) for x in range(len(result))],
+            'Miss Rate': self.miss_rate,
+            'False Positive Rate' : self.false_positive_rate
         }
         return output
 
@@ -150,6 +154,7 @@ class Task5:
             l,_ = self.get_bounds(i) # l is the ower bound of image i
             if l<d: # if lower bound is less than the current distance, this image is a candidate
                 d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i)
+                self.images_considered+=1
         return self.distance_vector
     
     def getRecomputationMatrix(self,vectors):
@@ -215,8 +220,9 @@ class Task5:
     def reproject_query_image(self):
         # Read query image
         image = ImageReader().get_query_image(self.args.query_image_path)
+        self.query_feature_vector = self.compute_feature_vector(image.matrix)
         # Project query image on the feature space
-        self.recomp = self.getReprojection(self.data['drt_attributes'],self.compute_feature_vector(image.matrix),self.comp)
+        self.recomp = self.getReprojection(self.data['drt_attributes'],self.query_feature_vector,self.comp)
         # Generate VA string for the query image
         self.Generate_VA_Query_Image(self.recomp)
 
@@ -260,9 +266,28 @@ class Task5:
         for x in range(len(final)):
             final[x].distance_from_query_image = result.iloc[x]['distance']
         return final
+
     def execute(self):
         result = self.get_similar_images()
+        similar_images_sequential = self.compute_similarity_matrix()
+        temp = [t.filename for t in result]
+        correct_images = 0
+        for x in similar_images_sequential:
+            if x in temp:
+                correct_images+=1
+        self.miss_rate = (self.args.t - correct_images)/self.args.t
+        self.false_positive_rate = (self.images_considered - correct_images)/self.args.t
         self.generate_ouput(result)
+
+    def compute_similarity_matrix(self):
+        sim = []
+        for x in self.original_images:
+            sim.append(distance.cityblock(x.feature_vector,self.query_feature_vector))
+        sim = 1 - sim/max(sim)
+        sim = pd.DataFrame(sim,columns=['Similarity'])
+        sim = sim.sort_values(by=['Similarity'],ascending=False).index.tolist()[:self.args.t]
+        sim = [self.original_images[x].filename for x in sim]
+        return sim
 
 def main():
     start_time=time.time()
