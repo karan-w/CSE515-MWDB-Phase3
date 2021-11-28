@@ -1,4 +1,8 @@
 import sys
+
+from utils.image_reader import ImageReader
+import numpy as np
+
 sys.path.append(".")
 
 from utils.feature_models.hog import HistogramOfGradients

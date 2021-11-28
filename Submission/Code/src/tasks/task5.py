@@ -34,6 +34,10 @@ class Task5:
     data = []
     images = None
     recomp = None
+
+    unique_buckets=set()
+    unique_images=set()
+
     def __init__(self,args=None):
         if args is None:
             parser = self.setup_args_parser()
@@ -111,7 +115,10 @@ class Task5:
         output = {
             'Size of Index Structure': str(size) + ' bytes.',
             'Approximations': va_file,
-            '{0} Most Similar Images'.format(self.args.t):['{0} -> Distance : {1}'.format(result[x].filename,result[x].distance_from_query_image) for x in range(len(result))]
+            '{0} Most Similar Images'.format(self.args.t):['{0} -> Distance : {1}'.format(result[x].filename,result[x].distance_from_query_image) for x in range(len(result))],
+            'Unique Buckets Searched': len(self.unique_buckets),
+            'Buckets':self.unique_buckets,
+            'Unique Images Searched': len(self.unique_images)
         }
         return output
 
@@ -149,6 +156,9 @@ class Task5:
             l,_ = self.get_bounds(i) # l is the ower bound of image i
             if l<d: # if lower bound is less than the current distance, this image is a candidate
                 d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i)
+                self.unique_buckets.add(self.va_strings[vectors[i]])
+                self.unique_images.add(vectors[i])
+
         return self.distance_vector
     
     def getRecomputationMatrix(self,vectors):

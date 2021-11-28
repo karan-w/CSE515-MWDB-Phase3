@@ -2,6 +2,7 @@ import argparse
 import logging
 import numpy as np
 
+from task1_svm import SVM
 from utils.feature_vector import FeatureVector
 
 from utils.constants import IMAGE_TYPE
@@ -24,10 +25,13 @@ class Task1:
         parser = self.setup_args_parser()
         # input_images_folder_path, feature_model, dimensionality_reduction_technique, reduced_dimensions_count, classification_images_folder_path, classifier
         self.args = parser.parse_args()
-    
+
+    def gaussian(x, z, sigma=0.1):
+        return np.exp(-np.linalg.norm(x - z, axis=1) ** 2 / (2 * (sigma ** 2)))
+
+
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
-
         parser.add_argument('--feature_model', type=str, required=True)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
         parser.add_argument('--reduced_dimensions_count', type=int, required=True)
@@ -99,16 +103,23 @@ class Task1:
         # Part B - Create classifiers from the training images data
         # Step 1 - Train SVM classifier on the training images n * k 
 
-
+        X = training_images_reduced_feature_vectors
+        y = true_class_labels
         init_kernel = Kernel('rbf')
-        multiclass_svm = MultiClassSVM(init_kernel)
-        multiclass_svm.fit(training_images_reduced_feature_vectors, class_labels)
+        svm = SVM(kernel=self.gaussian)
+        svm.fit(X,y)
+        y_pred = svm.predict(test_images_reduced_feature_vectors)
 
-        predicted_class_labels, votes_hash_maps = multiclass_svm.predict(test_images_reduced_feature_vectors)
+
+
+        # multiclass_svm = MultiClassSVM(init_kernel)
+        # multiclass_svm.fit(training_images_reduced_feature_vectors, class_labels)
+
+        # predicted_class_labels, votes_hash_maps = multiclass_svm.predict(test_images_reduced_feature_vectors)
         correct_predictions = 0
         wrong_predictions = 0
         for i in range(len(true_class_labels)):
-            if(true_class_labels[i] == predicted_class_labels[i]):
+            if(true_class_labels[i] == y_pred):
                 correct_predictions += 1
             else:
                 # print("true = ", true_class_labels[i])
