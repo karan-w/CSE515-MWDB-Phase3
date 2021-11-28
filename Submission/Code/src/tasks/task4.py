@@ -76,9 +76,12 @@ class Task4:
         # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
         # timestamp_folder_path = Output().create_timestamp_folder(self.args.output_folder_path)
         # /Outputs/Task1/2021-10-21-23-25-23 -> /Outputs/Task1/2021-10-21-23-25-23/output.json
-        output_json_path = os.path.join(
-            self.args.output_folder_path, 
-            self.args.output_filename)
+        if self.args.output_filename == "":
+            output_json_path = self.args.output_folder_path
+        else:
+            output_json_path = os.path.join(
+                self.args.output_folder_path, 
+                self.args.output_filename)
         Output().save_dict_as_json_file(output, output_json_path)
 
     def generate_transformation_matrix(self):
@@ -98,7 +101,7 @@ class Task4:
 
         # 3. Save the transformaton matrix to the output file
         output = {
-            'transformation_matrix': transformation_matrix.tolist()
+            'transformation_matrix': transformation_matrix.real.tolist()
         }
         self.save_output(output)
 
