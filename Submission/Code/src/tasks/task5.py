@@ -40,7 +40,6 @@ class Task5:
     recomp = None
 
     unique_buckets=set()
-    unique_images=set()
 
     def __init__(self,args=None):
         if args is None:
@@ -121,9 +120,9 @@ class Task5:
             '{0} Most Similar Images'.format(self.args.t):['{0} -> Distance : {1}'.format(result[x].filename,result[x].distance_from_query_image) for x in range(len(result))],
             'Miss Rate': self.miss_rate,
             'False Positive Rate' : self.false_positive_rate,
-            'Unique Buckets Searched': len(self.unique_buckets),
-            'Buckets':self.unique_buckets,
-            'Unique Images Searched': len(self.unique_images)
+            'Unique Buckets Searched': len(list(self.unique_buckets)),
+            'Buckets':list(self.unique_buckets),
+            'Unique Images Searched and Overall Images Searched': self.images_considered
         }
         return output
 
@@ -162,8 +161,7 @@ class Task5:
             if l<d: # if lower bound is less than the current distance, this image is a candidate
                 d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i)
                 self.images_considered+=1
-                self.unique_buckets.add(self.va_strings[vectors[i]])
-                self.unique_images.add(vectors[i])
+                self.unique_buckets.add(self.va_strings[self.original_images[i].filename])
 
         return self.distance_vector
     
