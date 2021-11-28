@@ -1,16 +1,10 @@
 #!/bin/bash
 
-set input_images_folder_path="../../all"
+set training_images_folder_path="E:/projects/workspace/1000/1000"
 set feature_model=ELBP
 set dimensionality_reduction_technique=PCA
-set reduced_dimensions_count=5
-set classification_images_folder_path="../../data"
+set reduced_dimensions_count=20
+set test_images_folder_path="E:/projects/workspace/100/100"
 set classifier=SVM
 
-python3.7 src/tasks/Task1.py \
---input_images_folder_path %input_images_folder_path% \
---feature_model %feature_model% \
---dimensionality_reduction_technique %dimensionality_reduction_technique% \
---reduced_dimensions_count %reduced_dimensions_count% \
---classification_images_folder_path "%classification_images_folder_path%" \
---classifier %classifier%
+python Task1.py --training_images_folder_path %training_images_folder_path% --feature_model %feature_model% --dimensionality_reduction_technique %dimensionality_reduction_technique% --reduced_dimensions_count %reduced_dimensions_count% --test_images_folder_path %test_images_folder_path% --classifier %classifier%

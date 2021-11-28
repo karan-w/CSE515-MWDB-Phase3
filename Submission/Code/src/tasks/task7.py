@@ -12,6 +12,7 @@ from shutil import copyfile
 import numpy as np
 
 from sklearn.svm import SVC
+
 from utils.image_reader import ImageReader
 
 class Task7:
