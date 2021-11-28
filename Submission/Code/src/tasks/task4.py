@@ -3,6 +3,7 @@ import json
 import numpy as np
 import os
 import sys
+import cv2
 
 from utils.indexes.lsh_index import LSHIndex
 
@@ -13,6 +14,7 @@ from utils.dimensionality_reduction.svd import SingularValueDecomposition
 from utils.dimensionality_reduction.lda import LatentDirichletAllocation
 from utils.dimensionality_reduction.kmeans import KMeans
 from utils.output import Output
+from utils.image import Image
 
 from task_helper import TaskHelper
 
@@ -41,6 +43,9 @@ class Task4:
         parser.add_argument('--output_filename', type=str, required=False)
         parser.add_argument('--generate_transformation_matrix', type=str, required=False)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=False)
+        parser.add_argument('--query_image_type', type=str, required=False)
+        parser.add_argument('--query_image_subject_id', type=str, required=False)
+        parser.add_argument('--query_image_id', type=str, required=False)
 
         return parser
 
@@ -226,6 +231,67 @@ class Task4:
         similar_images = lsh_index.get_similar_images(query_image_feature_vector, self.args.t, self.images)
         
         return similar_images
+
+    def same_subject(self, image1, image2):
+        return str(image1.subject_id) == str(image2.subject_id)
+
+    def same_image_type(self, image1, image2):
+        return str(image1.image_type) == str(image2.image_type)
+
+    
+    def evaluate_similar_images(self, similar_images, images):
+        query_image_matrix = cv2.imread(self.args.query_image_path, cv2.IMREAD_GRAYSCALE)
+        if query_image_matrix is None:
+            raise Exception(f"Could not read image with the filepath {self.args.query_image_path}")
+
+        true_image_type = None
+        true_subject_id = None
+        true_image_id = None
+
+        query_image_filename = self.args.query_image_path
+
+        if self.args.query_image_type and self.args.query_image_subject_id and self.args.query_image_id:
+            true_image_type = self.args.query_image_type
+            true_subject_id = self.args.query_image_subject_id
+            true_image_id = self.args.query_image_id
+        else:
+            query_image_filename = os.path.basename(self.args.query_image_path)
+            true_image_type, true_subject_id, true_image_id = self.image_reader.parse_image_filename(query_image_filename)
+
+        query_image = Image(query_image_filename, query_image_matrix, true_subject_id, true_image_id, true_image_type, self.args.query_image_path)
+
+        # We get the true positives and the false positives from similar_images set
+        true_positives = 0
+        false_positives = 0
+
+        for similar_image in similar_images:
+            if(self.same_subject(similar_image, query_image) and self.same_image_type(similar_image, query_image)):
+                true_positives += 1
+            else:
+                false_positives += 1
+
+        # We get the true negatives and false negatives from images - similar_images set 
+        true_negatives = 0
+        false_negatives = 0
+
+        images_hash_map = dict()
+        for image in images:
+            images_hash_map[image.filename] = image
+
+        for similar_image in similar_images:
+            if similar_image.filename in images_hash_map:
+                images_hash_map.pop(similar_image.filename)
+
+        for image in images_hash_map.values():
+            if(self.same_subject(similar_image, query_image) and self.same_image_type(similar_image, query_image)):
+                false_negatives += 1
+            else:
+                true_negatives += 1
+
+        miss_rate = false_negatives/(false_negatives + true_positives)
+        print("False Positives = ", false_positives)
+        print("Miss Rate = ", miss_rate)
+
 
     def run_task(self):
         similar_images = self.get_similar_images()
