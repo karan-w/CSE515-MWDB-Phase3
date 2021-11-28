@@ -13,6 +13,9 @@ from utils.dimensionality_reduction.kmeans import KMeans
 from utils.dimensionality_reduction.lda import LatentDirichletAllocation
 from utils.dimensionality_reduction.svd import SingularValueDecomposition
 from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
+from utils.feature_models.hog import HistogramOfGradients
+from utils.feature_models.elbp import ExtendedLocalBinaryPattern
+from utils.feature_models.cm import ColorMoments
 
 class Task5:
 
@@ -34,6 +37,12 @@ class Task5:
         parser = argparse.ArgumentParser()
 
         parser.add_argument('--b', type=str, required=True)
+        parser.add_argument('--feature_model', type=str, required=True)
+        parser.add_argument('--t', type=str, required=True)
+        parser.add_argument('--reduced_dimensions_count', type=int, required=True)
+        parser.add_argument('--training_images_folder_path', type=str, required=True)
+        parser.add_argument('--output_folder_path', type=str, required=True)
+        parser.add_argument('--latent_semantics_file', type=str, required=True)
         #parser.add_argument('--classifier', type=str, required=True) change to file path and take feature vector of the images
         return parser
     def feature_vector(self):
@@ -47,7 +56,7 @@ class Task5:
         # Step 2 - Extract feature vectors of all the training images n * m
         task_helper = TaskHelper()
         training_images = task_helper.compute_feature_vectors(
-            'ELBP', 
+            'CM', 
             training_images)
         # Step 3 - Reduce the dimensions of the feature vectors of all the training images n * k
         training_images = task_helper.reduce_dimensions(
@@ -56,6 +65,15 @@ class Task5:
             5)
         
         return training_images
+    def compute_feature_vector(self, feature_model, image):
+        if feature_model == COLOR_MOMENTS:
+            return ColorMoments().get_color_moments_fd(image)
+        elif feature_model == EXTENDED_LBP:
+            return ExtendedLocalBinaryPattern().get_elbp_fd(image)
+        elif feature_model == HISTOGRAM_OF_GRADIENTS:
+            return HistogramOfGradients().get_hog_fd(image)
+        else:
+            raise Exception(f"Unknown feature model - {feature_model}")
     def VA_File(self,b,vectors):
         self.images_count = np.shape(vectors)[0]
         self.dimension = np.shape(vectors)[1]
@@ -91,14 +109,14 @@ class Task5:
     def candidate_va_ssa(self,d,i):
         n = self.t - 1
         # ans = [0]*len(self.distance_vector)
-        if d<self.distance_vector.loc[n]['distance']:
-            self.distance_vector.loc[n]['distance'] = d
-            self.distance_vector.loc[n]['index'] = i
+        if d<self.distance_vector.iloc[n]['distance']:
+            self.distance_vector.iloc[n]['distance'] = d
+            self.distance_vector.iloc[n]['index'] = i
             # df = pd.DataFrame([ans,self.dst])
             # print(df)
-            self.distance_vector = self.distance_vector.sort_values('distance',ascending='False')
+            self.distance_vector = self.distance_vector.sort_values('distance')
         # print(self.distance_vector)
-        return self.distance_vector.loc[n]['distance']
+        return self.distance_vector.iloc[n]['distance']
 
     def get_bounds(self,i):
         return self.bounds[i]
@@ -113,15 +131,11 @@ class Task5:
     def va_ssa(self,vectors,vq,t):
         self.t = t
         d = self.initialize_candidates_va_ssa()
-        search_results=[]
         for i in range(len(vectors)):
             l,_ = self.get_bounds(i)
             if l<d:
-                print(l)
                 d = self.candidate_va_ssa(self.lp_metric(vectors[i],vq,1),i)
-                search_results.append(i)
-        print(search_results)
-        return search_results
+        return self.distance_vector['index'].to_list()
     
     def getRecomputationMatrix(self,vectors):
         if 'right_factor_matrix' in vectors.keys():
@@ -189,20 +203,19 @@ def main():
     k=np.shape(reduced_feature_vector)[1]
     bits_per_image=k*b
     va,partition_points=task.VA_File(bits_per_image,reduced_feature_vector)
-    va_strings = [{images[x].filename:''.join(va.loc[x])} for x in range(len(va))]
+    va_strings = {images[x].filename:''.join(va.loc[x]) for x in range(len(va))}
+    print(va_strings['image-original-19-2.png'])
     output = task.Generate_Output(len(images)*bits_per_image/8,va_strings)
-    OUTPUT_FILE_NAME = 'output.json'
+    # OUTPUT_FILE_NAME = 'output.json'
     # timestamp_folder_path = Output().create_timestamp_folder('D:\MWDB\CSE515-MWDB-Phase3\Submission\Outputs\Task5')  # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
-
-    timestamp_folder_path = Output().create_timestamp_folder('E:\\projects\\workspace\\CSE515-MWDB-Phase3\\Submission\\Outputs\\Task5')  # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
-    output_json_path = os.path.join(timestamp_folder_path, OUTPUT_FILE_NAME)
-    Output().save_dict_as_json_file(output, output_json_path)
+    # output_json_path = os.path.join(timestamp_folder_path, OUTPUT_FILE_NAME)
+    # Output().save_dict_as_json_file(output, output_json_path)
     bi = [bin(y)[2:].rjust(b, '0') for y in range(2**b)]
     #Get Query Image
     image = ImageReader().get_query_image('E:\\projects\\workspace\\test.png')
     # print(image)
-    recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
-    recomp = task.getReprojection(vectors,image.matrix.flatten(),comp)
+    # recomp = PrincipalComponentAnalysis().compute_reprojection(image.matrix.flatten(),comp)
+    recomp = task.getReprojection(vectors,task.compute_feature_vector('CM',image.matrix),comp)
     task.Generate_VA_Query_Image(recomp)
     result = task.va_ssa(reduced_feature_vector,recomp,10)
     result = [images[x].filename for x in result]
