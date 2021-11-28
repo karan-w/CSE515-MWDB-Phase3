@@ -12,6 +12,7 @@ import os
 import pandas as pd
 from utils.output import Output
 
+from sklearn.metrics import confusion_matrix
 import networkx
 
 
@@ -60,8 +61,6 @@ def Compute_Personalized_PageRank(Subjects, TransitionMatrix, SeedNodeSet):
     #     x.items(), key=lambda item: item[1], reverse=True)}
     # return list(x.keys())
 
-
-
 def Compute_Personalized_PageRank2(Subjects, TransitionMatrix, SeedNodeSet):
     Transportation_Probability = 0.15
     TransitionMatrix = np.array(TransitionMatrix)
@@ -104,9 +103,18 @@ def Compute_Personalized_PageRank2(Subjects, TransitionMatrix, SeedNodeSet):
     return P3_Value
     # return list(x.keys())
 
-
 def calculate_efficiency(pred, correct):
     count=0
+
+    cf_matrix = confusion_matrix(list(pred.values()),list(correct.values()))
+    print(cf_matrix)
+
+    # false_positives = cf_matrix[0][1]
+    # false_negatives = cf_matrix[1][0]
+    # true_negatives = cf_matrix[1][1]
+    # true_positives = cf_matrix[0][0]
+
+
 
     for key in pred:
         j , i = pred[key], correct[key]
@@ -175,7 +183,6 @@ def calculate_label_images_map(train_images_names, train_all_labels):
         else:
             label_images_map[train_all_labels[i]] = [train_images_names[i]]
     return label_images_map
-
 
 def compute_seed_matrix(label_images_list,n,image_index_map, alpha=0.85):
 
@@ -253,7 +260,6 @@ def similarity_of_a_image(image1,feature1):
             # dist=0
             similar_list.append(0)
     return similar_list
-
 
 def compute_random_walk(image_feature_map,alpha=0.85,kk=20):
     # random_walk = [[0.0 for i in range(len(image_feature_map))] for j in range(len(image_feature_map))]
@@ -389,14 +395,12 @@ train_images_names = image_reader.get_all_images_filenames_in_folder(train_path)
 
 print("train images name ............. ",len(train_images_names))
 
-train_all_labels = [label.split("-")[1] for label in train_images_names]
-
+train_all_labels = [label.split("-")[2] for label in train_images_names]
 
 print("train label list............. ",len(train_all_labels))
 label_list = set()
 label_list.update(train_all_labels)
 print("label list............. ",len(label_list))
-
 
 test_files = os.listdir(test_path)
 
@@ -405,18 +409,15 @@ for file in test_files:
         splts = file.split(".")
         os.rename(os.path.join(test_path,file),os.path.join(test_path,splts[0]+"-test"+"."+splts[1]))
 
-
 test_images = image_reader.get_all_query_images_in_folder(test_path)
 test_images_names = image_reader.get_all_images_filenames_in_query_folder(test_path)
 
-test_all_labels = [label.split("-")[1] for label in test_images_names]
-
+test_all_labels = [label.split("-")[2] for label in test_images_names]
 
 test_image_name_label_map=dict()
 
 for i,j in zip(test_images_names,test_all_labels):
     test_image_name_label_map[i]=j
-
 
 print(len(test_images))
 
@@ -485,7 +486,6 @@ for i,img in enumerate(combined_image_names):
 random_walk2 = np.array(random_walk)
 G = networkx.from_numpy_array(random_walk2)
 
-
 print("calculating seed and ppr for each label")
 
 test_label_map=dict()
@@ -497,7 +497,7 @@ for i in range(len(test_images)):
     # df.insert(0, "Images", combined_image_names)
     df.insert(0, "Labels", combined_labels)
 
-    top_n_images = list(sorted(df.values, key=lambda x: x[1], reverse=True))[:47]
+    top_n_images = list(sorted(df.values, key=lambda x: x[1], reverse=True))[:49]
     test_count_map=dict()
     for lbl in top_n_images:
         if lbl[0] in test_count_map.keys():
@@ -526,16 +526,11 @@ for i in range(len(test_images)):
     #
     # labelled_ppr[lbl] = list(sorted(df.values, key=lambda x: x[1], reverse=True))
 
-
-
 # image_label_dict = associate_labels_to_test_images(test_images_names,labelled_ppr,label_list)
 print("associated labels to test")
-
 print("calculating efficiency")
 
-
 calculate_efficiency(test_label_map,test_image_name_label_map)
-
 print("Total run time ....",time.time()-start_time," seconds")
 
 # print(image_feature_map.keys())

@@ -106,6 +106,8 @@ def Compute_Personalized_PageRank2(Subjects, TransitionMatrix, SeedNodeSet):
 
 
 def calculate_efficiency(image_label_dict, test_all_labels):
+
+    # cf_matrix=confusion_matrix()
     count=0
     for i,j in zip(image_label_dict.values(),test_all_labels):
         if ".png" in i:
@@ -516,6 +518,10 @@ print("associated labels to test")
 
 print("calculating efficiency")
 calculate_efficiency(image_label_dict,test_all_labels)
+
+
+
+
 
 print("Total run time ....",time.time()-start_time," seconds")
 
