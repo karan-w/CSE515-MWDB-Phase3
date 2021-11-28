@@ -130,32 +130,33 @@ def ppr(teleportation_matrix, random_walk, len_seed, alpha):
 
     print("pi",pi)
 
-    P1_Teleportation_Discounting = np.zeros(len(teleportation_matrix))
-
-    P1_ReSeeding_Value = (1 - alpha) / len_seed
-    for x in range(len(teleportation_matrix)):
-        if teleportation_matrix[x][0]==0:
-            P1_Teleportation_Discounting[x] = pi[x] / (alpha)
-        else:
-            P1_Teleportation_Discounting[x] = (pi[x] - P1_ReSeeding_Value) / (
-                                                  alpha)
-    print("p1 teleport discount ", P1_Teleportation_Discounting)
-
-    P2_Value = P1_Teleportation_Discounting / sum(P1_Teleportation_Discounting)
-
-    print("p2 val ", P2_Value)
-
-    Seed_Set_Significance = 0
-    for x in range(len(teleportation_matrix)):
-        Seed_Set_Significance += P2_Value[x]
-    P3_Value = P2_Value
-
-
-    for x in range(len(teleportation_matrix)):
-        P3_Value[x] = P1_Teleportation_Discounting[x]
-
-    print("p3 ", P3_Value)
-    return P3_Value
+    # P1_Teleportation_Discounting = np.zeros(len(teleportation_matrix))
+    #
+    # P1_ReSeeding_Value = (1 - alpha) / len_seed
+    # for x in range(len(teleportation_matrix)):
+    #     if teleportation_matrix[x][0]==0:
+    #         P1_Teleportation_Discounting[x] = pi[x] / (alpha)
+    #     else:
+    #         P1_Teleportation_Discounting[x] = (pi[x] - P1_ReSeeding_Value) / (
+    #                                               alpha)
+    # print("p1 teleport discount ", P1_Teleportation_Discounting)
+    #
+    # P2_Value = P1_Teleportation_Discounting / sum(P1_Teleportation_Discounting)
+    #
+    # print("p2 val ", P2_Value)
+    #
+    # Seed_Set_Significance = 0
+    # for x in range(len(teleportation_matrix)):
+    #     Seed_Set_Significance += P2_Value[x]
+    # P3_Value = P2_Value
+    #
+    #
+    # for x in range(len(teleportation_matrix)):
+    #     P3_Value[x] = P1_Teleportation_Discounting[x]
+    #
+    # print("p3 ", P3_Value)
+    # return P3_Value
+    return pi
 
 def compute_image_feature_map(image_list,feature):
     img_feature_map=dict()
@@ -374,11 +375,11 @@ mypath="all/"
 start_time = time.time()
 image_reader = ImageReader()
 
-train_path="E:\\projects\\workspace\\2000\\2000"
+train_path="E:\\projects\\workspace\\1000\\1000"
 # train_path="all/"
 # test_path="100/100/"
 
-test_path="E:\\projects\\workspace\\500\\500"
+test_path="E:\\projects\\workspace\\100\\100"
 
 train_images = image_reader.get_all_images_in_folder(train_path)
 train_images_names = image_reader.get_all_images_filenames_in_folder(train_path)
@@ -386,7 +387,7 @@ train_images_names = image_reader.get_all_images_filenames_in_folder(train_path)
 
 print("train images name ............. ",len(train_images_names))
 
-train_all_labels = [label.split("-")[2] for label in train_images_names]
+train_all_labels = [label.split("-")[1] for label in train_images_names]
 
 
 print("train label list............. ",len(train_all_labels))
@@ -406,7 +407,7 @@ for file in test_files:
 test_images = image_reader.get_all_query_images_in_folder(test_path)
 test_images_names = image_reader.get_all_images_filenames_in_query_folder(test_path)
 
-test_all_labels = [label.split("-")[2] for label in test_images_names]
+test_all_labels = [label.split("-")[1] for label in test_images_names]
 
 
 print(len(test_images))
@@ -455,9 +456,9 @@ print("calculated image feature map of length ",len(image_feature_map))
 
 print("combined length ",len(combined_image_names))
 
-# label_images_map = calculate_label_images_map(train_images_names,train_all_labels)
+label_images_map = calculate_label_images_map(train_images_names,train_all_labels)
 
-label_images_map = calculate_label_images_map(combined_image_names,combined_labels)
+# label_images_map = calculate_label_images_map(combined_image_names,combined_labels)
 print("mapped label to images")
 
 # time.time()

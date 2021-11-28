@@ -160,5 +160,28 @@ class ImageReader:
         image = Image(image_filepath, image_matrix, None, None, None, image_filepath)
         logger.debug(image.__str__())
         return image
+
+    def get_all_images_filenames_in_query_folder(self, folder_path):
+        image_filenames = [image_filename for image_filename in os.listdir(folder_path)]
+        image_filenames = sorted(image_filenames)
+        return image_filenames
+
+    def get_all_query_images_in_folder(self, folder_path):
+        logger.info("Reading all the images in the folder.")
+        start_time = time.time()
+
+        image_filenames = self.get_all_images_filenames_in_query_folder(folder_path)
+        images = []
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            for image_filename in image_filenames:
+                futures.append(executor.submit(self.get_query_image, os.path.join(folder_path, image_filename)))
+            for index, future in enumerate(futures):
+                images.append(future.result())
+
+        print("--- %s seconds ---" % (
+        time.time() - start_time))  # 5.11 seconds before parallelism and 2.11 seconds after parallelism to read 4800 files
+        return images
     
 

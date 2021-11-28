@@ -6,7 +6,7 @@ class FeatureVector:
         pass
 
     def create_dataset_feature_vector(self, images):
-        images = sorted(images, key=lambda image: (image.subject_id, image.image_id)) 
+        # images = sorted(images, key=lambda image: (image.subject_id, image.image_id))
         dataset_feature_vector = []
         for image in images:
             dataset_feature_vector.append(image.feature_vector)
