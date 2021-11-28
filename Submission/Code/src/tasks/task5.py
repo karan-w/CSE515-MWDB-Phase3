@@ -17,6 +17,8 @@ from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
 from utils.feature_models.hog import HistogramOfGradients
 from utils.feature_models.elbp import ExtendedLocalBinaryPattern
 from utils.feature_models.cm import ColorMoments
+import time
+
 
 class Task5:
 
@@ -56,7 +58,6 @@ class Task5:
         parser.add_argument('--latent_semantics_file', type=str, required=True)
         parser.add_argument('--query_image_path', type=str, required=True)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
-        parser.add_argument('--generate_va_file', type=str, required=False)
         return parser
     def feature_vector(self):
         #Compute feature vectors for all the images in the given folder
@@ -274,8 +275,10 @@ class Task5:
         self.generate_ouput(result)
 
 def main():
+    start_time=time.time()
     task = Task5()
     task.execute()
+    print("---- ",time.time()-start_time," s")
 
 
 if __name__ == "__main__":

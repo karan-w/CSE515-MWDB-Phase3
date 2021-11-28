@@ -112,7 +112,7 @@ class Output_Generator:
         for model in models:
             images = task_helper.compute_feature_vectors(model, images)
             for k in k_vals:
-                if k=="*":
+                if k=='*':
                     k = len(images)
                 k = int(k)
                 print("Generating output for model ",model," and k ",k," with ",dimensionality_reduction_technique)
