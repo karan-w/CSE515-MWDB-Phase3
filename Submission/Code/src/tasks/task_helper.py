@@ -38,3 +38,36 @@ class TaskHelper:
         else:
             raise Exception(
                 f"Unknown dimensionality reduction technique - {dimensionality_reduction_technique}")
+
+    def extract_class_labels(self, images, class_type: str):
+        image_reader = ImageReader()
+        class_labels = [''] * len(images)
+
+        if class_type is IMAGE_TYPE:
+            for index, image in enumerate(images):
+                # image_type, subject_id, image_id = image_reader.parse_image_filename(image.filename) # TODO:parallelize
+                class_labels[index] = image.image_type
+
+        elif class_type is SUBJECT_ID:
+            for index, image in enumerate(images):
+                # image_type, subject_id, image_id = image_reader.parse_image_filename(image.filename) # TODO:parallelize
+                class_labels[index] = image.subject_id
+
+        elif class_type is IMAGE_ID:
+            for index, image in enumerate(images):
+                # image_type, subject_id, image_id = image_reader.parse_image_filename(image.filename) # TODO:parallelize
+                class_labels[index] = image.image_id
+        else:
+            raise Exception("Not a supported class type.")
+
+        return np.array(class_labels)
+
+    def compute_query_feature_vector(self, feature_model, image):
+        if feature_model == COLOR_MOMENTS:
+            return ColorMoments().get_color_moments_fd(image.matrix)
+        elif feature_model == EXTENDED_LBP:
+            return ExtendedLocalBinaryPattern().get_elbp_fd(image.matrix)
+        elif feature_model == HISTOGRAM_OF_GRADIENTS:
+            return HistogramOfGradients().get_hog_fd(image.matrix)
+        else:
+            raise Exception(f"Unknown feature model - {feature_model}")
