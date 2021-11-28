@@ -130,7 +130,7 @@ def ppr(teleportation_matrix, random_walk, len_seed):
 
     pi = (pi - min(pi)) / (max(pi) - min(pi))
 
-    print("pi",pi)
+    # print("pi",pi)
 
     # P1_Teleportation_Discounting = np.zeros(len(teleportation_matrix))
     #
@@ -497,18 +497,28 @@ for i in range(len(test_images)):
     # df.insert(0, "Images", combined_image_names)
     df.insert(0, "Labels", combined_labels)
 
-    top_20_images = list(sorted(df.values, key=lambda x: x[1], reverse=True))[:20]
+    top_n_images = list(sorted(df.values, key=lambda x: x[1], reverse=True))[:47]
     test_count_map=dict()
-    for lbl in top_20_images:
-        if lbl in test_count_map.keys():
-            test_count_map[lbl]+=1
+    for lbl in top_n_images:
+        if lbl[0] in test_count_map.keys():
+            test_count_map[lbl[0]]+=1
         else:
-            test_count_map[lbl]=1
+            test_count_map[lbl[0]]=1
 
+    # test_count = sorted(test_count_map.items(), key=lambda item: item[1], reverse=True)
+    maxi=0
+    llbl=""
+    for k in test_count_map:
+        if test_count_map[k]>maxi:
+            maxi=test_count_map[k]
+            llbl=k
+        # elif test_count_map[k]==maxi:
+        #     if k==test_images_names[i].split("-")[1]:
+        #         llbl = k
+        #         break
 
-    test_count = sorted(test_count_map.items(), key=lambda item: item[1], sorted=True)
-
-    test_label_map[test_images_names[i]] = test_count[0][0]
+    test_label_map[test_images_names[i]] = llbl
+    # test_label_map[test_images_names[i]] = test_count[0][0]
 
 
     # df = df.sort_values(by=["ppr"], ascending=False)
@@ -522,8 +532,6 @@ for i in range(len(test_images)):
 print("associated labels to test")
 
 print("calculating efficiency")
-
-
 
 
 calculate_efficiency(test_label_map,test_image_name_label_map)
