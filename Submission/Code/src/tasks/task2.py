@@ -65,7 +65,7 @@ class Task2:
         # equivalent to y in classical machine learning - np.ndarray (4800 * 1)
 
         # class_labels = task_helper.extract_class_labels(training_images, SUBJECT_ID)
-        class_labels = task_helper.extract_class_labels(training_images, SUBJECT_ID)
+        class_labels = task_helper.extract_class_labels(training_images, IMAGE_TYPE)
 
         # Step 4 - Read testing images from the second folder
 
@@ -90,7 +90,7 @@ class Task2:
         # equivalent to y in classical machine learning - np.ndarray (4800 * 1)
         # true_class_labels = task_helper.extract_class_labels(test_images, SUBJECT_ID)
 
-        true_class_labels = task_helper.extract_class_labels(test_images, SUBJECT_ID)
+        true_class_labels = task_helper.extract_class_labels(test_images, IMAGE_TYPE)
 
         # Part B - Create classifiers from the training images data
         # Step 1 - Train SVM classifier on the training images n * k
