@@ -3,15 +3,15 @@ import os
 import argparse
 from task_helper import TaskHelper
 
-from utils.constants import FEEDBACK_QUERY, PRELIMINARY_QUERY
-from task7 import Task7
 from task4 import Task4
+from task5 import Task5
 
 import csv
 from shutil import copyfile
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
+from utils.classifiers.dt.dt import DecisionTreeClassifier
 
 from utils.image_reader import ImageReader
 
@@ -22,18 +22,16 @@ class Task8:
 
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--mode', type=str, choices=[PRELIMINARY_QUERY, FEEDBACK_QUERY], required=True)
-        parser.add_argument('--L', type=int, required=True)
+        parser.add_argument('--L', type=int, required=False)
         parser.add_argument('--k', type=int, required=True)
-        parser.add_argument('--input_type', type=str, required=True)
-        parser.add_argument('--transformation_matrix_file_path', type=str, required=True)
+        parser.add_argument('--b', type=int, required=False)
+        parser.add_argument('--latent_semantics_file', type=str, required=False)
+        parser.add_argument('--index_tool', type=str,choices=['LSH','VA-File'], required=False)
+        parser.add_argument('--transformation_matrix_file_path', type=str, required=False)
         parser.add_argument('--images_folder_path', type=str, required=True)
         parser.add_argument('--feature_model', type=str, required=True)
         parser.add_argument('--query_image_path', type=str, required=True)
         parser.add_argument('--t', type=int, required=True)
-        parser.add_argument('--output_folder_path', type=str, required=True)
-        parser.add_argument('--output_filename', type=str, required=True)
-        parser.add_argument('--results_file_path', type=str, required=False)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
         parser.add_argument("--classifier", help="What classifier to use", type=str, choices=["SVM", "DT"], required=True)
 
@@ -77,8 +75,12 @@ class Task8:
         return ids.split(',')
 
     def run_preliminary(self, relevant_images):
-        task = Task4(self.args)
-        similar_images = task.get_similar_images(relevant_images)
+        if self.args.index_tool == 'LSH':
+            task4 = Task4(self.args)
+            similar_images = task4.get_similar_images()
+        else:
+            task5 = Task5(self.args)
+            similar_images = task5.get_similar_images()
         return similar_images
 
     def run_feedback(self, similar_images, relevant_images):
@@ -122,15 +124,18 @@ class Task8:
             test_images_reduced_feature_vector.append(image.reduced_feature_vector.real)
         
         training_images = np.array(training_images)
-        class_labels = [1 for i in range(len(relevant_images_filenames))] + [-1 for j in range(len(irrelevant_images_filenames))]
         
         if self.args.classifier == "SVM":
+            class_labels = [1 for i in range(len(relevant_images_filenames))] + [-1 for j in range(len(irrelevant_images_filenames))]
             svc_model = SVC(C=10, kernel='rbf')
             svc_model.fit(training_images, class_labels)
             predicted_class_labels = svc_model.predict(test_images_reduced_feature_vector)
 
         elif self.args.classifier == "DT":
-            pass
+            class_labels = [1 for i in range(len(relevant_images_filenames))] + [0 for j in range(len(irrelevant_images_filenames))]
+            dt = DecisionTreeClassifier(5)
+            dt.fit(training_images, np.array(class_labels))
+            predicted_class_labels = dt.predict(test_images_reduced_feature_vector)
 
         relevant_images_hash_map = dict()
         for class_label, image in zip(predicted_class_labels, images):
@@ -161,7 +166,12 @@ class Task8:
         task4 = Task4(self.args)
         task4.generate_transformation_matrix()
 
-        similar_images = task4.get_similar_images()
+        if self.args.index_tool == 'LSH':
+            task4 = Task4(self.args)
+            similar_images = task4.get_similar_images()
+        else:
+            task5 = Task5(self.args)
+            similar_images = task5.get_similar_images()
 
         for image in similar_images:
             print(image.filename, image.distance_from_query_image)
