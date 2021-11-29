@@ -92,9 +92,6 @@ class Task8:
                 irrelevant_images_filenames.append(similar_images[i].filename)
             else:
                 continue
-
-        print(relevant_images_filenames)
-        print(irrelevant_images_filenames)
         
         if relevant_images == None:
             image_reader = ImageReader()
