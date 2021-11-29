@@ -75,10 +75,10 @@ class Task8:
     def run_preliminary(self, relevant_images):
         if self.args.index_tool == 'LSH':
             task4 = Task4(self.args)
-            similar_images = task4.get_similar_images()
+            similar_images = task4.get_similar_images(relevant_images)
         else:
             task5 = Task5(self.args)
-            similar_images = task5.get_similar_images()
+            similar_images = task5.get_similar_images(relevant_images)
         return similar_images
 
     def run_feedback(self, similar_images, relevant_images):
