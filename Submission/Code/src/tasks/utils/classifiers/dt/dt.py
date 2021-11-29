@@ -16,7 +16,13 @@ class DecisionTreeClassifier:
     def fit(self, X, y):
         self.n_classes_ = len(set(y))
         self.n_features_ = X.shape[1]
-        self.tree_ = self._grow_tree(X, y)
+        self.tree_ = self._build_tree(X, y)
+
+    def calculate_gini(self, left, right, i, m):
+        gini_left = 1.0 - sum((left[x] / i) ** 2 for x in range(self.n_classes_))
+        gini_right = 1.0 - sum((right[x] / (m - i)) ** 2 for x in range(self.n_classes_))
+        gini = (i * gini_left + (m - i) * gini_right) / m
+        return gini
 
     def predict(self, X):
         return [self._predict(inputs) for inputs in X]
@@ -36,12 +42,7 @@ class DecisionTreeClassifier:
                 c = classes[i - 1]
                 num_left[c] += 1
                 num_right[c] -= 1
-                gini_left = 1.0 - sum(
-                    (num_left[x] / i) ** 2 for x in range(self.n_classes_)
-                )
-                gini_right = 1.0 - sum((num_right[x] / (m - i)) ** 2 for x in range(self.n_classes_)
-                )
-                gini = (i * gini_left + (m - i) * gini_right) / m
+                gini = self.calculate_gini(num_left, num_right, i, m)
                 if thresholds[i] == thresholds[i - 1]:
                     continue
                 if gini < best_gini:
@@ -50,7 +51,7 @@ class DecisionTreeClassifier:
                     best_thr = (thresholds[i] + thresholds[i - 1]) / 2
         return best_idx, best_thr
 
-    def _grow_tree(self, X, y, depth=0):
+    def _build_tree(self, X, y, depth=0):
         num_samples_per_class = [np.sum(y == i) for i in range(self.n_classes_)]
         predicted_class = np.argmax(num_samples_per_class)
         node = Node(predicted_class=predicted_class)
@@ -62,8 +63,8 @@ class DecisionTreeClassifier:
                 X_right, y_right = X[~indices_left], y[~indices_left]
                 node.feature_index = idx
                 node.threshold = thr
-                node.left = self._grow_tree(X_left, y_left, depth + 1)
-                node.right = self._grow_tree(X_right, y_right, depth + 1)
+                node.left = self._build_tree(X_left, y_left, depth + 1)
+                node.right = self._build_tree(X_right, y_right, depth + 1)
         return node
 
     def _predict(self, inputs):
