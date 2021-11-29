@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from task1_svm import SVM
+from utils.classifiers.ppr_classifier import PPR
 from utils.feature_vector import FeatureVector
 
 from utils.constants import IMAGE_TYPE
@@ -123,7 +124,19 @@ class Task1:
 
         # Step 3 - Train personalized page rank classifier on the training images n * k 
         elif self.args.classifier == 'PPR':
-            pass
+            args = dict()
+            args["train_images"] = training_images
+            args["test_images"] = test_images
+            args["train_set_reduced_fv"] = training_images_reduced_feature_vectors
+            args["test_set_reduced_fv"] = test_images_reduced_feature_vectors
+            args["train_all_labels"] = class_labels
+            args["test_all_labels"] = true_class_labels
+            args["type"] = "X"
+            print("class_labels \n", class_labels)
+            print("test_labels \n", true_class_labels)
+
+            ppr = PPR()
+            predicted_class_labels = ppr.fit(args)
 
         else:
             raise Exception('Choose appropriate classification model')
@@ -131,7 +144,7 @@ class Task1:
         correct_predictions = 0
         wrong_predictions = 0
         for i in range(len(true_class_labels)):
-            if(true_class_labels[i] == y_pred):
+            if(true_class_labels[i] == predicted_class_labels):
                 correct_predictions += 1
             else:
                 wrong_predictions += 1

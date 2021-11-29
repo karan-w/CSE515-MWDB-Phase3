@@ -2,6 +2,7 @@ import argparse
 import logging
 import numpy as np
 
+from utils.classifiers.ppr_classifier import PPR
 from utils.feature_vector import FeatureVector
 
 from utils.constants import IMAGE_ID
@@ -118,7 +119,18 @@ class Task3:
 
         # Step 3 - Train personalized page rank classifier on the training images n * k 
         elif self.args.classifier == 'PPR':
-            pass
+            args = dict()
+            args["train_images"] = training_images
+            args["test_images"] = test_images
+            args["train_set_reduced_fv"] = training_images_reduced_feature_vectors
+            args["test_set_reduced_fv"] = test_images_reduced_feature_vectors
+            args["train_all_labels"] = class_labels
+            args["test_all_labels"] = true_class_labels
+            args["type"] = "Z"
+            # print("class_labels \n", class_labels)
+            # print("test_labels \n", true_class_labels)
+            ppr = PPR()
+            predicted_class_labels = ppr.fit2(args)
 
         else:
             raise Exception('Choose appropriate classification model')
