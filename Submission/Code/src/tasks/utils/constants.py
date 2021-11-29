@@ -10,3 +10,6 @@ KMEANS = 'kmeans'
 IMAGE_TYPE = "image type"
 SUBJECT_ID = "subject id"
 IMAGE_ID = "image id"
+
+PRELIMINARY_QUERY = "preliminary query"
+FEEDBACK_QUERY = "feedback query"
