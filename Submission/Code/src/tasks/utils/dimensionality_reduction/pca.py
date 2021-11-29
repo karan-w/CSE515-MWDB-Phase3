@@ -25,7 +25,7 @@ class PrincipalComponentAnalysis:
         eigen_vectors are normalized such that the column v[:,i] 
         is the eigenvector corresponding to the eigenvalue w[i]
         '''
-        eigen_values, eigen_vectors = np.linalg.eig(covariance_matrix)
+        eigen_values, eigen_vectors = np.linalg.eigh(covariance_matrix)
 
         # Using ELBP and HOG as FV yields complex numbers which can't be 
         # stored in the output as complex numbers aren't serializable
@@ -63,4 +63,3 @@ class PrincipalComponentAnalysis:
     def compute_reprojection(self, query_image, k_principal_components_eigen_vectors):
         reduced_dataset_feature_vector = np.dot(query_image, k_principal_components_eigen_vectors) # (1, m) * (m, k)
         return reduced_dataset_feature_vector
-

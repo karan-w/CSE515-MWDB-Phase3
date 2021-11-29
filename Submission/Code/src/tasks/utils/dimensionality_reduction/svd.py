@@ -53,7 +53,7 @@ class SingularValueDecomposition:
         # right_factor_matrix = right_factor_matrix[:k_latent, :]
         reduced_dataset_feature_vector = np.dot(dataset_feature_vector, right_factor_matrix.T)
         attributes['right_factor_matrix'] = right_factor_matrix
-
+        attributes['reduced_dataset_feature_vector'] = reduced_dataset_feature_vector
         return reduced_dataset_feature_vector, attributes
 
     def compute_subject_SVD(self, subjects_similarity_matrix, k):

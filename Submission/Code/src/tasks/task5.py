@@ -45,7 +45,6 @@ class Task5:
             self.args = parser.parse_args()
         else:
             self.args = args
-
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
 
@@ -59,7 +58,6 @@ class Task5:
         parser.add_argument('--query_image_path', type=str, required=True)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
         return parser
-
     def feature_vector(self):
         #Compute feature vectors for all the images in the given folder
         image_reader = ImageReader()

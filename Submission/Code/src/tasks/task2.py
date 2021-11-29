@@ -2,6 +2,7 @@ import argparse
 import logging
 import numpy as np
 
+from utils.classifiers.ppr_classifier import PPR
 from utils.feature_vector import FeatureVector
 
 from utils.constants import SUBJECT_ID
@@ -22,6 +23,7 @@ from sklearn.preprocessing import LabelEncoder
 This class implements task 1 functionality.
 """
 class Task2:
+
     def __init__(self):
         parser = self.setup_args_parser()
         # input_images_folder_path, feature_model, dimensionality_reduction_technique, reduced_dimensions_count, classification_images_folder_path, classifier
@@ -119,7 +121,18 @@ class Task2:
 
         # Step 3 - Train personalized page rank classifier on the training images n * k 
         elif self.args.classifier == 'PPR':
-            pass
+            args = dict()
+            args["train_images"] = training_images
+            args["test_images"] = test_images
+            args["train_set_reduced_fv"] = training_images_reduced_feature_vectors
+            args["test_set_reduced_fv"] = test_images_reduced_feature_vectors
+            args["train_all_labels"] = class_labels
+            args["test_all_labels"] = true_class_labels
+            args["type"] = "Y"
+            # print("class_labels \n", class_labels)
+            # print("test_labels \n", true_class_labels)
+            ppr = PPR()
+            predicted_class_labels = ppr.fit2(args)
 
         else:
             raise Exception('Choose appropriate classification model')
@@ -157,6 +170,7 @@ logging.basicConfig(filename="logs/logs.log", filemode="w", level=logging.DEBUG,
 def main():
     task = Task2()
     task.execute()
+
 
 if __name__ == "__main__":
     main()
