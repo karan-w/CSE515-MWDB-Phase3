@@ -6,8 +6,6 @@ from task_helper import TaskHelper
 from task4 import Task4
 from task5 import Task5
 
-import csv
-from shutil import copyfile
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
@@ -163,8 +161,6 @@ class Task8:
         # TODO: Change generate transformation matrix thing
         self.args.output_folder_path = self.args.transformation_matrix_file_path
         self.args.output_filename = ""
-        task4 = Task4(self.args)
-        task4.generate_transformation_matrix()
 
         if self.args.index_tool == 'LSH':
             task4 = Task4(self.args)
@@ -184,8 +180,6 @@ class Task8:
         while feedback == "y":
 
             relevant_images = self.run_feedback(similar_images, relevant_images)
-
-            print(len(relevant_images))
 
             similar_images = self.run_preliminary(relevant_images)
 

@@ -99,74 +99,56 @@ class Task2:
 
         # Part B - Create classifiers from the training images data
         # Step 1 - Train SVM classifier on the training images n * k 
-
-
-        # init_kernel = Kernel('rbf')
-        # multiclass_svm = MultiClassSVM(init_kernel)
-        # multiclass_svm.fit(training_images_reduced_feature_vectors, class_labels)
-
-        # predicted_class_labels, votes_hash_maps = multiclass_svm.predict(test_images_reduced_feature_vectors)
-        # correct_predictions = 0
-        # wrong_predictions = 0
-        # for i in range(len(true_class_labels)):
-        #     if(true_class_labels[i] == predicted_class_labels[i]):
-        #         correct_predictions += 1
-        #     else:
-        #         # print("true = ", true_class_labels[i])
-        #         # print("predicted = ", predicted_class_labels[i])
-        #         # for class_label, votes in votes_hash_maps[i].items():
-        #         #     print(class_label, votes)
-        #         wrong_predictions += 1
-
-        # print("correct predictions = ", correct_predictions)
-        # print("wrong predictions = ", wrong_predictions)
+        if self.args.classifier == 'SVM':
+            init_kernel = Kernel('rbf')
+            multiclass_svm = MultiClassSVM(init_kernel)
+            multiclass_svm.fit(training_images_reduced_feature_vectors, class_labels)
+            # Step 1 - Test trained SVM classifier on the testing images 
+            predicted_class_labels, votes_hash_maps = multiclass_svm.predict(test_images_reduced_feature_vectors)
 
         # Step 2 - Train decision tree classifier on the training images n * k 
-        label_encoder = LabelEncoder()
-        class_labels = label_encoder.fit_transform(class_labels)
-        true_class_labels = label_encoder.fit_transform(true_class_labels)
+        elif self.args.classifier == 'DT':
+            label_encoder = LabelEncoder()
+            class_labels = label_encoder.fit_transform(class_labels)
+            true_class_labels = label_encoder.fit_transform(true_class_labels)
 
-        dt = DecisionTreeClassifier(10)
-        dt.fit(training_images_reduced_feature_vectors, class_labels)
-        predicted_class_labels = dt.predict(test_images_reduced_feature_vectors)
-
-        print(len(predicted_class_labels))
+            dt = DecisionTreeClassifier(10)
+            dt.fit(training_images_reduced_feature_vectors, class_labels)
+            # Step 2 - Test trained decision tree classifier on the testing images
+            predicted_class_labels = dt.predict(test_images_reduced_feature_vectors)
 
         # Step 3 - Train personalized page rank classifier on the training images n * k 
+        elif self.args.classifier == 'PPR':
+            pass
 
-        # Part C - Assign labels to the test images 
-        # Step 1 - Test trained SVM classifier on the testing images 
-        # svm.predict() # We'll pass all test images and we'll get as output list of class labels
-        # Step 2 - Test trained decision tree classifier on the testing images 
+        else:
+            raise Exception('Choose appropriate classification model')
 
-        # Step 3 - Test personalized page rank classifier on the testing images 
+        correct_predictions = 0
+        wrong_predictions = 0
+        for i in range(len(true_class_labels)):
+            if(true_class_labels[i] == predicted_class_labels[i]):
+                correct_predictions += 1
+            else:
+                wrong_predictions += 1
 
-        # Part D - Evaluate the classifications done by each classifier on the test images 
-        # Step 1 - Create confusion matrix for SVM classifier
+        print("correct predictions = ", correct_predictions)
+        print("wrong predictions = ", wrong_predictions)
+
+        # # Part D - Evaluate the classifications done by each classifier on the test images 
+        # # Step 1 - Create confusion matrix for the classifier
         cf_matrix = confusion_matrix(true_class_labels, predicted_class_labels)
         false_positives = cf_matrix.sum(axis=0) - np.diag(cf_matrix) 
         false_negatives = cf_matrix.sum(axis=1) - np.diag(cf_matrix)
         true_positives = np.diag(cf_matrix)
         true_negatives = cf_matrix.sum() - (false_positives + false_negatives + true_positives)
 
-        print(false_positives, false_negatives, true_negatives, true_positives)
-
-        # Step 2 - Compute false positives and miss rate for SVM classifier
+        # # Step 2 - Compute false positives and miss rate for the classifier
         miss_rate = false_negatives / (false_negatives + true_positives)
         false_positive_rate = false_positives / (false_positives + true_negatives)
 
         print('False positive rate: ', false_positive_rate)
         print('Miss rate: ', miss_rate)
-        
-        # Step 3 - Create confusion matrix for decision tree classifier
-
-        # Step 4 - Compute false positives and miss rate for decision tree classifier
-
-        # Step 5 - Create confusion matrix for personalized page rank classifier
-
-        # Step 6 - Compute false positives and miss rate for personalized page rank classifier
-
-        # Part E - Store all results in the output file for task 1
 
 logger = logging.getLogger(Task2.__name__)
 logging.basicConfig(filename="logs/logs.log", filemode="w", level=logging.DEBUG,

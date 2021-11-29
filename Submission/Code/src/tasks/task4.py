@@ -9,10 +9,6 @@ from utils.indexes.lsh_index import LSHIndex
 
 from utils.image_reader import ImageReader
 from utils.constants import *
-from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
-from utils.dimensionality_reduction.svd import SingularValueDecomposition
-from utils.dimensionality_reduction.lda import LatentDirichletAllocation
-from utils.dimensionality_reduction.kmeans import KMeans
 from utils.output import Output
 from utils.image import Image
 
@@ -28,6 +24,10 @@ class Task4:
             self.args = parser.parse_args()
         else:
             self.args = args
+
+        self.bucketCount = 0
+        self.uniqueImagesCount = 0
+        self.overallImagesCount = 0
 
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
@@ -54,14 +54,6 @@ class Task4:
             file_contents = json.load(f)
 
         return file_contents['transformation_matrix']
-
-
-    # def create_image_filenames_list(self, images): 
-    #     image_filenames = []
-    #     for image in images:
-    #         image_filenames.append(image.filename)
-
-    #     return image_filenames
 
     def extract_transformation_matrix(self, dimensionality_reduction_technique, attributes):
         transformation_matrix = None
@@ -164,7 +156,7 @@ class Task4:
         similar_images_folder_name = "similar_images"
 
         destination_folder = os.path.join(self.args.output_folder_path, similar_images_folder_name)
-        os.makedirs(destination_folder)
+        # os.makedirs(destination_folder)
 
         # Save similar images in a directory
         for similar_image in similar_images:
@@ -223,12 +215,15 @@ class Task4:
 
         lsh_index.populate_index(self.images)
 
-        print(sys.getsizeof(lsh_index))
-
+        print('Size of Index Structure: ' + str(lsh_index.get_size()) + ' bytes') 
+        
         query_image = self.image_reader.get_query_image(self.args.query_image_path)
         query_image_feature_vector = self.task_helper.compute_query_feature_vector(self.args.feature_model, query_image)
 
         similar_images = lsh_index.get_similar_images(query_image_feature_vector, self.args.t, self.images)
+        self.bucketCount = lsh_index.bucketCount
+        self.overallImagesCount = lsh_index.overallImageCount
+        self.uniqueImagesCount = lsh_index.uniqueImageCount
         
         return similar_images
 
@@ -283,19 +278,23 @@ class Task4:
                 images_hash_map.pop(similar_image.filename)
 
         for image in images_hash_map.values():
-            if(self.same_subject(similar_image, query_image) and self.same_image_type(similar_image, query_image)):
+            if(self.same_subject(image, query_image) and self.same_image_type(image, query_image)):
                 false_negatives += 1
             else:
                 true_negatives += 1
 
-        miss_rate = false_negatives/(false_negatives + true_positives)
-        print("False Positives = ", false_positives)
-        print("Miss Rate = ", miss_rate)
-
-
+        self.false_positive_rate = false_positives / (false_positives + true_negatives)
+        self.miss_rate = false_negatives / (false_negatives + true_positives)
+        
     def run_task(self):
         similar_images = self.get_similar_images()
+        self.evaluate_similar_images(similar_images, self.images)
         self.save_similar_images(similar_images)
+        print('Buckets Searched: ' + str(self.bucketCount))
+        print("False Positives =  {:.02f}%".format(self.false_positive_rate*100))
+        print("Miss Rate = {:.02f}%".format(self.miss_rate*100))
+        print('Unique images considered: ' + str(self.uniqueImagesCount))
+        print('Overall images considered: ' + str(self.overallImagesCount))
 
     def execute(self):
         if(self.args.generate_transformation_matrix):

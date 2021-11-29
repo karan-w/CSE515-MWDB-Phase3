@@ -5,8 +5,6 @@ import json
 from utils.image_reader import ImageReader
 from task_helper import TaskHelper
 import numpy as np
-from utils.constants import IMAGE_TYPE
-from utils.feature_vector import FeatureVector
 import pandas as pd  
 from utils.constants import *
 from utils.output import Output
@@ -47,6 +45,7 @@ class Task5:
             self.args = parser.parse_args()
         else:
             self.args = args
+
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
 
@@ -60,6 +59,7 @@ class Task5:
         parser.add_argument('--query_image_path', type=str, required=True)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=True)
         return parser
+
     def feature_vector(self):
         #Compute feature vectors for all the images in the given folder
         image_reader = ImageReader()
@@ -70,9 +70,11 @@ class Task5:
             training_images)
         
         return training_images
+        
     def read_latent_semantics_file(self):
         # Read the latent semantics file 
-        self.data = json.load(open(os.path.join(self.args.latent_semantics_file,'{0}-{1}-{2}.json'.format(self.args.feature_model,self.args.k,self.args.dimensionality_reduction_technique))))
+        file = open(self.args.latent_semantics_file)
+        self.data = json.load(file)
 
     def compute_feature_vector(self, image):
         #Compute the feature vector for an image
@@ -124,6 +126,12 @@ class Task5:
             'Buckets':list(self.unique_buckets),
             'Unique Images Searched and Overall Images Searched': self.images_considered
         }
+        print('Size of Index Structure: ' + str(size) + ' bytes.')
+        print('Buckets Searched: ' + str(len(list(self.unique_buckets))))
+        print('False Positive Rate:' + str(self.false_positive_rate))
+        print('Miss Rate: ' + str(self.miss_rate))
+        print('Unique images considered: ' + str(self.images_considered))
+        print('Overall images considered: ' + str(self.images_considered))
         return output
 
     def initialize_candidates_va_ssa(self):
@@ -131,11 +139,10 @@ class Task5:
         self.distance_vector = pd.DataFrame(data=[[0,sys.maxsize] for x in range(self.args.t)], columns=["index", "distance"])
         return sys.maxsize
 
-
     def candidate_va_ssa(self,d,i):
         # If a candidate is found, replace the least similar image from the vector of size t with the new candidate 
         n = self.args.t - 1
-        if d<self.distance_vector.iloc[n]['distance']:
+        if d < self.distance_vector.iloc[n]['distance']:
             self.distance_vector.iloc[n]['distance'] = d
             self.distance_vector.iloc[n]['index'] = i
             self.distance_vector = self.distance_vector.sort_values('distance')
@@ -253,7 +260,7 @@ class Task5:
 
     def get_similar_images(self,images=None):
         # Read latent semantic file 
-        self.read_latent_semantics_file() 
+        self.read_latent_semantics_file()
         if images==None:
             self.images = self.feature_vector()
         else: self.images = images
@@ -298,10 +305,10 @@ class Task5:
         return sim
 
 def main():
-    start_time=time.time()
+    # start_time=time.time()
     task = Task5()
     task.execute()
-    print("---- ",time.time()-start_time," s")
+    # print("---- ",time.time()-start_time," s")
 
 
 if __name__ == "__main__":

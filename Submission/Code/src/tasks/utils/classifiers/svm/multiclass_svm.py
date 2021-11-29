@@ -1,4 +1,3 @@
-from numpy.lib.function_base import rot90
 from .kernel import Kernel
 from .svm import SupportVectorMachine
 import numpy as np
@@ -44,10 +43,9 @@ class MultiClassSVM:
             filtered_class_labels = []
 
             for index, class_label in enumerate(class_labels):
-                if class_pair[0] in class_label or class_pair[1] in class_label:
+                if class_pair[0] in [class_label] or class_pair[1] in [class_label]:
                     filtered_images_reduced_feature_vector.append(training_samples[index]) # list of list
                     filtered_class_labels.append([class_label]) # list of list
-
 
             filtered_images_reduced_feature_vector = np.stack(filtered_images_reduced_feature_vector)
             filtered_class_labels = np.stack(filtered_class_labels)

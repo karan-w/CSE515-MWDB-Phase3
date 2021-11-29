@@ -10,7 +10,7 @@ class Kernel:
             self.kernel_function = lambda x1, x2: np.exp(-gamma * np.dot(x1 - x2, x1 - x2))
 
         elif self.type == 'poly':
-            self.kernel_function = lambda x1, x2: (gamma * np.dot(x1, x2) + self.r) ** self.degree
+            self.kernel_function = lambda x1, x2: (gamma * np.dot(x1, x2) + self.r) ** 5
 
     def construct_kernel_matrix(self, training_samples, gamma):
         self.declare_kernel_function(gamma)
