@@ -229,6 +229,10 @@ class Task5:
         # Read query image
         image = ImageReader().get_query_image(self.args.query_image_path)
         self.query_feature_vector = self.compute_feature_vector(image.matrix)
+
+
+        # self.query_feature_vector = self.compute_feature_vector(image_matrix)
+
         # Project query image on the feature space
         self.recomp = self.getReprojection(self.data['drt_attributes'],self.query_feature_vector,self.comp)
         # Generate VA string for the query image

@@ -77,6 +77,6 @@ if __name__ == "__main__":
     y_pred = svm.predict(X)
 
 
-    plot_contour(X, y, svm)
+    # plot_contour(X, y, svm)
 
     print(f"Accuracy: {sum(y==y_pred)/y.shape[0]}")

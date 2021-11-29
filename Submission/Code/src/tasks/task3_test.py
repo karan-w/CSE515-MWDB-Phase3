@@ -411,6 +411,10 @@ for file in test_files:
 
 test_images = image_reader.get_all_query_images_in_folder(test_path)
 test_images_names = image_reader.get_all_images_filenames_in_query_folder(test_path)
+#
+#
+# test_images = image_reader.get_all_images_in_folder(test_path,True)
+# test_images_names = image_reader.get_all_images_filenames_in_folder(test_path)
 
 test_all_labels = [label.split("-")[2] for label in test_images_names]
 
@@ -498,6 +502,10 @@ for i in range(len(test_images)):
     df.insert(0, "Labels", combined_labels)
 
     top_n_images = list(sorted(df.values, key=lambda x: x[1], reverse=True))[:49]
+
+    print("df ",df)
+
+    input()
     test_count_map=dict()
     for lbl in top_n_images:
         if lbl[0] in test_count_map.keys():

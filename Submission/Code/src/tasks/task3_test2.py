@@ -365,6 +365,7 @@ class Task1:
         # parser.add_argument('--classifier', type=str, required=True)
 
         return parser
+
 logger = logging.getLogger(Task1.__name__)
 logging.basicConfig(filename="logs/logs.log", filemode="w", level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
@@ -406,8 +407,13 @@ for file in test_files:
         os.rename(os.path.join(test_path,file),os.path.join(test_path,splts[0]+"-test"+"."+splts[1]))
 
 
-test_images = image_reader.get_all_query_images_in_folder(test_path)
-test_images_names = image_reader.get_all_images_filenames_in_query_folder(test_path)
+# test_images = image_reader.get_all_query_images_in_folder(test_path)
+# test_images_names = image_reader.get_all_images_filenames_in_query_folder(test_path)
+
+
+test_images = image_reader.get_all_images_in_folder(test_path)
+test_images_names = image_reader.get_all_images_filenames_in_folder(test_path)
+
 
 test_all_labels = [label.split("-")[1] for label in test_images_names]
 
