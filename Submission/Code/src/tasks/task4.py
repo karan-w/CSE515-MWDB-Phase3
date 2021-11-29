@@ -3,20 +3,19 @@ import json
 import numpy as np
 import os
 import sys
+import cv2
 
 from utils.indexes.lsh_index import LSHIndex
 
 from utils.image_reader import ImageReader
 from utils.constants import *
-from utils.dimensionality_reduction.pca import PrincipalComponentAnalysis
-from utils.dimensionality_reduction.svd import SingularValueDecomposition
-from utils.dimensionality_reduction.lda import LatentDirichletAllocation
-from utils.dimensionality_reduction.kmeans import KMeans
 from utils.output import Output
+from utils.image import Image
 
 from task_helper import TaskHelper
 
 import csv
+from shutil import copyfile
 
 class Task4:
     def __init__(self, args = None):
@@ -25,6 +24,10 @@ class Task4:
             self.args = parser.parse_args()
         else:
             self.args = args
+
+        self.bucketCount = 0
+        self.uniqueImagesCount = 0
+        self.overallImagesCount = 0
 
     def setup_args_parser(self):
         parser = argparse.ArgumentParser()
@@ -40,6 +43,9 @@ class Task4:
         parser.add_argument('--output_filename', type=str, required=False)
         parser.add_argument('--generate_transformation_matrix', type=str, required=False)
         parser.add_argument('--dimensionality_reduction_technique', type=str, required=False)
+        parser.add_argument('--query_image_type', type=str, required=False)
+        parser.add_argument('--query_image_subject_id', type=str, required=False)
+        parser.add_argument('--query_image_id', type=str, required=False)
 
         return parser
 
@@ -48,14 +54,6 @@ class Task4:
             file_contents = json.load(f)
 
         return file_contents['transformation_matrix']
-
-
-    # def create_image_filenames_list(self, images): 
-    #     image_filenames = []
-    #     for image in images:
-    #         image_filenames.append(image.filename)
-
-    #     return image_filenames
 
     def extract_transformation_matrix(self, dimensionality_reduction_technique, attributes):
         transformation_matrix = None
@@ -75,9 +73,12 @@ class Task4:
         # /Outputs/Task1 -> /Outputs/Task1/2021-10-21-23-25-23
         # timestamp_folder_path = Output().create_timestamp_folder(self.args.output_folder_path)
         # /Outputs/Task1/2021-10-21-23-25-23 -> /Outputs/Task1/2021-10-21-23-25-23/output.json
-        output_json_path = os.path.join(
-            self.args.output_folder_path, 
-            self.args.output_filename)
+        if self.args.output_filename == "":
+            output_json_path = self.args.output_folder_path
+        else:
+            output_json_path = os.path.join(
+                self.args.output_folder_path, 
+                self.args.output_filename)
         Output().save_dict_as_json_file(output, output_json_path)
 
     def generate_transformation_matrix(self):
@@ -97,7 +98,7 @@ class Task4:
 
         # 3. Save the transformaton matrix to the output file
         output = {
-            'transformation_matrix': transformation_matrix.tolist()
+            'transformation_matrix': transformation_matrix.real.tolist()
         }
         self.save_output(output)
 
@@ -140,7 +141,30 @@ class Task4:
 
             experiment_writer.writerow(row)
 
-    def get_similar_images(self):
+    def save_similar_images(self, similar_images):
+        # Save CSV of similar images along with distances 
+        csv_filename = self.args.output_filename
+        csv_path = os.path.join(self.args.output_folder_path, csv_filename)
+        
+        with open(csv_path, mode='w') as similar_images_csv_file:
+            writer = csv.writer(similar_images_csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(['Image Filename', 'Distance From Query Image', 'Feedback'])
+            for similar_image in similar_images:
+                row = [similar_image.filename, similar_image.distance_from_query_image]
+                writer.writerow(row)
+
+        similar_images_folder_name = "similar_images"
+
+        destination_folder = os.path.join(self.args.output_folder_path, similar_images_folder_name)
+        # os.makedirs(destination_folder)
+
+        # Save similar images in a directory
+        for similar_image in similar_images:
+            source = similar_image.filepath
+            destination = os.path.join(destination_folder, similar_image.filename)
+            copyfile(source, destination)
+
+    def get_similar_images(self, images = None):
                 # 1. Build the locality sensitive hashing index 
         #     LSHI(L, k, transformation_space) [Assumption: L = transformation_space.shape[1]]
         #     1. a. Set up the hash functions from the transformation space (g1, ..., gL)
@@ -163,12 +187,18 @@ class Task4:
 
         # Read transformation_space_matrix from the file
         self.image_reader = ImageReader()
-        self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
-
         self.task_helper = TaskHelper()
-        self.images = self.task_helper.compute_feature_vectors(
-            self.args.feature_model, 
-            self.images)
+
+        if images is None:
+            self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
+
+            self.images = self.task_helper.compute_feature_vectors(
+                self.args.feature_model, 
+                self.images)
+
+        else:
+            self.images = images
+
         transformation_matrix = self.read_transformation_matrix(self.args.transformation_matrix_file_path)
         transformation_matrix = np.array(transformation_matrix)
 
@@ -185,18 +215,86 @@ class Task4:
 
         lsh_index.populate_index(self.images)
 
-        print(sys.getsizeof(lsh_index))
-
+        print('Size of Index Structure: ' + str(lsh_index.get_size()) + ' bytes') 
+        
         query_image = self.image_reader.get_query_image(self.args.query_image_path)
         query_image_feature_vector = self.task_helper.compute_query_feature_vector(self.args.feature_model, query_image)
 
         similar_images = lsh_index.get_similar_images(query_image_feature_vector, self.args.t, self.images)
+        self.bucketCount = lsh_index.bucketCount
+        self.overallImagesCount = lsh_index.overallImageCount
+        self.uniqueImagesCount = lsh_index.uniqueImageCount
         
         return similar_images
 
+    def same_subject(self, image1, image2):
+        return str(image1.subject_id) == str(image2.subject_id)
+
+    def same_image_type(self, image1, image2):
+        return str(image1.image_type) == str(image2.image_type)
+
+    
+    def evaluate_similar_images(self, similar_images, images):
+        query_image_matrix = cv2.imread(self.args.query_image_path, cv2.IMREAD_GRAYSCALE)
+        if query_image_matrix is None:
+            raise Exception(f"Could not read image with the filepath {self.args.query_image_path}")
+
+        true_image_type = None
+        true_subject_id = None
+        true_image_id = None
+
+        query_image_filename = self.args.query_image_path
+
+        if self.args.query_image_type and self.args.query_image_subject_id and self.args.query_image_id:
+            true_image_type = self.args.query_image_type
+            true_subject_id = self.args.query_image_subject_id
+            true_image_id = self.args.query_image_id
+        else:
+            query_image_filename = os.path.basename(self.args.query_image_path)
+            true_image_type, true_subject_id, true_image_id = self.image_reader.parse_image_filename(query_image_filename)
+
+        query_image = Image(query_image_filename, query_image_matrix, true_subject_id, true_image_id, true_image_type, self.args.query_image_path)
+
+        # We get the true positives and the false positives from similar_images set
+        true_positives = 0
+        false_positives = 0
+
+        for similar_image in similar_images:
+            if(self.same_subject(similar_image, query_image) and self.same_image_type(similar_image, query_image)):
+                true_positives += 1
+            else:
+                false_positives += 1
+
+        # We get the true negatives and false negatives from images - similar_images set 
+        true_negatives = 0
+        false_negatives = 0
+
+        images_hash_map = dict()
+        for image in images:
+            images_hash_map[image.filename] = image
+
+        for similar_image in similar_images:
+            if similar_image.filename in images_hash_map:
+                images_hash_map.pop(similar_image.filename)
+
+        for image in images_hash_map.values():
+            if(self.same_subject(image, query_image) and self.same_image_type(image, query_image)):
+                false_negatives += 1
+            else:
+                true_negatives += 1
+
+        self.false_positive_rate = false_positives / (false_positives + true_negatives)
+        self.miss_rate = false_negatives / (false_negatives + true_positives)
+        
     def run_task(self):
         similar_images = self.get_similar_images()
-        #TODO: Save similar images to JSON file
+        self.evaluate_similar_images(similar_images, self.images)
+        self.save_similar_images(similar_images)
+        print('Buckets Searched: ' + str(self.bucketCount))
+        print("False Positives =  {:.02f}%".format(self.false_positive_rate*100))
+        print("Miss Rate = {:.02f}%".format(self.miss_rate*100))
+        print('Unique images considered: ' + str(self.uniqueImagesCount))
+        print('Overall images considered: ' + str(self.overallImagesCount))
 
     def execute(self):
         if(self.args.generate_transformation_matrix):

@@ -12,7 +12,6 @@ from shutil import copyfile
 import numpy as np
 
 from sklearn.svm import SVC
-
 from utils.image_reader import ImageReader
 
 class Task7:
@@ -26,8 +25,8 @@ class Task7:
         parser.add_argument('--index_tool', type=str,choices=['LSH','VA-File'], required=False)
         parser.add_argument('--L', type=int, required=False)
         parser.add_argument('--k', type=int, required=True)
-        parser.add_argument('--b', type=int, required=True)
-        parser.add_argument('--latent_semantics_file', type=str, required=True)
+        parser.add_argument('--b', type=int, required=False)
+        parser.add_argument('--latent_semantics_file', type=str, required=False)
         parser.add_argument('--input_type', type=str, required=False)
         parser.add_argument('--transformation_matrix_file_path', type=str, required=False)
         parser.add_argument('--images_folder_path', type=str, required=True)
