@@ -98,7 +98,7 @@ class Task4:
 
         # 3. Save the transformaton matrix to the output file
         output = {
-            'transformation_matrix': transformation_matrix.real.tolist()
+            'transformation_matrix': transformation_matrix.tolist()
         }
         self.save_output(output)
 
@@ -192,12 +192,18 @@ class Task4:
         if images is None:
             self.images = self.image_reader.get_all_images_in_folder(self.args.images_folder_path) # 4800 images
 
-            self.images = self.task_helper.compute_feature_vectors(
+            # input_image = next(image for image in images if image.filename == "image-noise01-18-2.png")
+
+            # self.images = [input_image]
+        
+        else:
+            self.images = images
+
+        self.images = self.task_helper.compute_feature_vectors(
                 self.args.feature_model, 
                 self.images)
 
-        else:
-            self.images = images
+        # import pdb; pdb.set_trace() 
 
         transformation_matrix = self.read_transformation_matrix(self.args.transformation_matrix_file_path)
         transformation_matrix = np.array(transformation_matrix)
@@ -219,7 +225,7 @@ class Task4:
         
         query_image = self.image_reader.get_query_image(self.args.query_image_path)
         query_image_feature_vector = self.task_helper.compute_query_feature_vector(self.args.feature_model, query_image)
-
+        # pdb.set_trace()
         similar_images = lsh_index.get_similar_images(query_image_feature_vector, self.args.t, self.images)
         self.bucketCount = lsh_index.bucketCount
         self.overallImagesCount = lsh_index.overallImageCount

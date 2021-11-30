@@ -45,6 +45,7 @@ class LSHIndex:
                 retrieved_image_filenames_set.add(image_filename)
 
         self.uniqueImageCount = len(retrieved_image_filenames_set)
+        
         images_hash_map = dict()
         for image in images:
             images_hash_map[image.filename] = image

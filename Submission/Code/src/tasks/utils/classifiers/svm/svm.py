@@ -12,9 +12,9 @@ class SupportVectorMachine:
         # self.kernel = None
         # self.kernel_function = None
         # self.gamma = None
-        # self.lambdas = None
-        # self.X_support_vectors = None
-        # self.Y_support_vectors = None
+        self.lambdas = None
+        self.X_support_vectors = None
+        self.Y_support_vectors = None
         self.w = None
         self.b = None
 
@@ -62,14 +62,14 @@ class SupportVectorMachine:
 
         lambdas = np.ravel(solution['x']) # training_samples_count * 1
         valid_support_vectors = lambdas > 1e-9
-        self.valid_train_sv = training_samples[valid_support_vectors]
-        self.valid_class_labels = class_labels[valid_support_vectors]
+        self.X_support_vectors = training_samples[valid_support_vectors]
+        self.Y_support_vectors = class_labels[valid_support_vectors]
         self.lambdas = lambdas[valid_support_vectors]
-        sv_index = np.arange(len(lambdas))[valid_support_vectors]
+        support_vectors_index = np.arange(len(lambdas))[valid_support_vectors]
         self.b = 0
         for i in range(len(self.lambdas)):
-            self.b += self.valid_class_labels[i]
-            self.b -= np.sum(self.lambdas * self.valid_class_labels * kernel_matrix[sv_index[i], valid_support_vectors])
+            self.b += self.Y_support_vectors[i]
+            self.b -= np.sum(self.lambdas * self.Y_support_vectors * kernel_matrix[support_vectors_index[i], valid_support_vectors])
         self.b /= len(self.lambdas)
         
         # threshold = 1e-6
@@ -102,7 +102,7 @@ class SupportVectorMachine:
         if self.kernel.type == 'linear':
             self.w = np.zeros(features_count)
             for i in range(len(self.lambdas)):
-                self.w += self.lambdas[i] * self.sv_X[i] * self.sv_y[i]
+                self.w += self.lambdas[i] * self.X_support_vectors[i] * self.Y_support_vectors[i]
         else:
             self.w = None
 
@@ -141,7 +141,7 @@ class SupportVectorMachine:
         else:
             predicted_class_label = 0
             for k in range(len(test_sample)):
-                for multipliers, support_vectors_x, support_vectors_y in zip(self.lambdas, self.sv_X, self.sv_y):
+                for multipliers, support_vectors_x, support_vectors_y in zip(self.lambdas, self.X_support_vectors, self.Y_support_vectors):
                     predicted_class_label += multipliers * support_vectors_y * self.kernel.kernel_function(test_sample[k], support_vectors_x)
                 predicted_class_label = predicted_class_label + self.b
 

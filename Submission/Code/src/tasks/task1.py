@@ -2,7 +2,6 @@ import argparse
 import logging
 import numpy as np
 
-from task1_svm import SVM
 from utils.classifiers.ppr_classifier import PPR
 from utils.feature_vector import FeatureVector
 
@@ -136,15 +135,16 @@ class Task1:
             print("test_labels \n", true_class_labels)
 
             ppr = PPR()
-            predicted_class_labels = ppr.fit(args)
+            predicted_class_labels = ppr.fit2(args)
 
         else:
             raise Exception('Choose appropriate classification model')
 
         correct_predictions = 0
         wrong_predictions = 0
+        print(predicted_class_labels)
         for i in range(len(true_class_labels)):
-            if(true_class_labels[i] == predicted_class_labels):
+            if(true_class_labels[i] == predicted_class_labels[i]):
                 correct_predictions += 1
             else:
                 wrong_predictions += 1

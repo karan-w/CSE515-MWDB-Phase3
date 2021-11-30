@@ -25,7 +25,7 @@ class ImageReader:
         return(fileName[-5:])
 
     def get_image(self, folder_path, image_type, subject_id, image_id):
-        image_filename = f'image-{image_type}-{subject_id}-{image_id}.png'
+        image_filename = f"image-{image_type}-{subject_id}-{image_id}.png"
         image_filepath = os.path.join(folder_path, image_filename)
         logger.info(f"Reading image at filepath {image_filepath}")
         image_matrix = cv2.imread(image_filepath, cv2.IMREAD_GRAYSCALE)

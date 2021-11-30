@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 
 class Kernel:
     def declare_kernel_function(self, gamma):
